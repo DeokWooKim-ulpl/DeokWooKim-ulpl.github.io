@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaussian beam focusing</title>
+</head>
+<body>
+<!-- Google Sites용 가우시안 빔 포커싱 계산기 (모바일 반응형) -->
+<div id="gaussian-beam-calculator-container">
+  <style>
+    #gaussian-beam-calculator-container {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    #gaussian-beam-calculator-container * {
+      box-sizing: border-box;
+    }
+    
+    .beam-calc-title {
+      font-size: clamp(18px, 4vw, 26px);
+      margin-bottom: 25px;
+      text-align: center;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .beam-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    @media (min-width: 768px) {
+      .beam-container {
+        flex-direction: row;
+        gap: 25px;
+      }
+    }
+
+    .beam-table-box {
+      flex: 1;
+      min-width: 300px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .beam-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .beam-table th {
+      background-color: #afafaf;
+      color: black;
+      padding: 15px 12px;
+      text-align: center;
+      border: none;
+      font-size: clamp(14px, 2.5vw, 16px);
+      font-weight: 600;
+    }
+
+    .beam-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+    
+    @media (max-width: 480px) {
+      .beam-table td {
+        padding: 8px 6px;
+      }
+    }
+
+    .beam-table td:first-child {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+      width: 25%;
+      min-width: 80px;
+      font-size: clamp(11px, 2vw, 14px);
+      line-height: 1.3;
+      text-align: left;
+      padding-left: 10px;
+    }
+    
+    @media (max-width: 480px) {
+      .beam-table td:first-child {
+        width: 30%;
+        padding-left: 6px;
+      }
+    }
+
+    .beam-input-cell {
+      width: 25%;
+      min-width: 70px;
+      text-align: center;
+      position: relative;
+    }
+    
+    @media (max-width: 768px) {
+      .beam-input-cell {
+        width: 23.33%;
+        min-width: 60px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .beam-input-cell {
+        width: 23.33%;
+        min-width: 50px;
+      }
+    }
+
+    .beam-input {
+      width: 100%;
+      padding: 8px 6px;
+      font-size: 13px;
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      background-color: #fff;
+      text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .beam-input {
+        padding: 6px 4px;
+        font-size: 12px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .beam-input {
+        padding: 5px 3px;
+        font-size: 11px;
+      }
+    }
+
+    .beam-input:focus {
+      outline: none;
+      border-color: #afafaf;
+      box-shadow: 0 0 0 3px rgba(175, 175, 175, 0.1);
+      background-color: #f5f5f5;
+    }
+
+    .beam-input:read-only {
+      background-color: #f5f5f5;
+      border-color: #ddd;
+      color: #555;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    .beam-unit {
+      display: block;
+      margin-top: 2px;
+      color: #6c757d;
+      font-size: 10px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 480px) {
+      .beam-unit {
+        font-size: 9px;
+      }
+    }
+
+    /* 특별한 입력 필드 (파장) */
+    .wavelength-row td:not(:first-child) {
+      text-align: center;
+    }
+
+    .wavelength-input {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 768px) {
+      .wavelength-input {
+        max-width: 150px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .wavelength-input {
+        max-width: 120px;
+      }
+    }
+
+    /* 호버 효과 */
+    .beam-table tr:hover td {
+      background-color: #f5f5f5;
+    }
+    
+    .beam-table tr:hover td:first-child {
+      background-color: #e9ecef;
+    }
+
+    /* 계산 결과 강조 */
+    .calculated-output {
+      background-color: #f5f5f5 !important;
+      border-color: #ddd !important;
+      font-weight: 700;
+      color: #555;
+    }
+
+    /* 터치 디바이스용 개선 */
+    @media (hover: none) and (pointer: coarse) {
+      .beam-input {
+        padding: 10px 8px;
+        font-size: 16px; /* iOS 줌 방지 */
+        border-radius: 8px;
+      }
+      
+      .beam-table td {
+        padding: 15px 8px;
+      }
+    }
+
+    /* 테이블 스크롤 */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    @media (max-width: 480px) {
+      .table-scroll {
+        margin: 0 -10px;
+        padding: 0 10px;
+      }
+    }
+
+    /* 소수점 표시 개선 */
+    .scientific-notation {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+    
+    @media (max-width: 480px) {
+      .scientific-notation {
+        font-size: 10px;
+      }
+    }
+
+    /* 프린트 스타일 */
+    @media print {
+      #gaussian-beam-calculator-container {
+        background-color: white;
+        padding: 10px;
+      }
+      
+      .beam-table-box {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      
+      .beam-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+
+  <h1 class="beam-calc-title">Gaussian Beam Focusing Calculator</h1>
+
+  <div class="beam-container">
+    <!-- Input Parameters -->
+    <div class="beam-table-box">
+      <div class="table-scroll">
+        <table class="beam-table">
+          <tr>
+            <th colspan="4">Input Parameters</th>
+          </tr>
+          <tr class="wavelength-row">
+            <td>Wavelength (λ)</td>
+            <td colspan="3">
+              <input type="number" class="beam-input wavelength-input" id="lambda_nm" step="any" placeholder="0">
+              <span class="beam-unit">[nm]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Focal Length (f)</td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="f_mm" step="any" placeholder="0">
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="f_cm" step="any" placeholder="0">
+              <span class="beam-unit">[cm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="f_m" step="any" placeholder="0">
+              <span class="beam-unit">[m]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Initial Beam Waist (w₀)</td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="w01_um" step="any" placeholder="0">
+              <span class="beam-unit">[μm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="w01_mm" step="any" placeholder="0">
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="w01_cm" step="any" placeholder="0">
+              <span class="beam-unit">[cm]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Propagation Distance (z₁)</td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="z1_mm" step="any" placeholder="0">
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="z1_cm" step="any" placeholder="0">
+              <span class="beam-unit">[cm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="number" class="beam-input" id="z1_m" step="any" placeholder="0">
+              <span class="beam-unit">[m]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Output Parameters -->
+    <div class="beam-table-box">
+      <div class="table-scroll">
+        <table class="beam-table">
+          <tr>
+            <th colspan="4">Output Parameters</th>
+          </tr>
+          <tr>
+            <td>Calculated Beam Waist (w₀₂)</td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="w02_um" readonly>
+              <span class="beam-unit">[μm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="w02_mm" readonly>
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="w02_cm" readonly>
+              <span class="beam-unit">[cm]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Rayleigh Range (z₀)</td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="z0_mm" readonly>
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="z0_cm" readonly>
+              <span class="beam-unit">[cm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="z0_m" readonly>
+              <span class="beam-unit">[m]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Propagation Distance through a Lens (z₂)</td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="zp02_mm" readonly>
+              <span class="beam-unit">[mm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="zp02_cm" readonly>
+              <span class="beam-unit">[cm]</span>
+            </td>
+            <td class="beam-input-cell">
+              <input type="text" class="beam-input calculated-output" id="zp02_m" readonly>
+              <span class="beam-unit">[m]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const BeamCalcNamespace = 'BeamCalc_' + Date.now();
+  
+  class GaussianBeamCalculator {
+    constructor() {
+      this.initializeElements();
+      this.setupEventListeners();
+    }
+    
+    initializeElements() {
+      // Input elements
+      this.lambda = document.getElementById("lambda_nm");
+
+      this.f_mm = document.getElementById("f_mm");
+      this.f_cm = document.getElementById("f_cm");
+      this.f_m = document.getElementById("f_m");
+
+      this.w01_um = document.getElementById("w01_um");
+      this.w01_mm = document.getElementById("w01_mm");
+      this.w01_cm = document.getElementById("w01_cm");
+
+      this.z1_mm = document.getElementById("z1_mm");
+      this.z1_cm = document.getElementById("z1_cm");
+      this.z1_m = document.getElementById("z1_m");
+
+      // Output elements
+      this.w02_um = document.getElementById("w02_um");
+      this.w02_mm = document.getElementById("w02_mm");
+      this.w02_cm = document.getElementById("w02_cm");
+
+      this.z0_mm = document.getElementById("z0_mm");
+      this.z0_cm = document.getElementById("z0_cm");
+      this.z0_m = document.getElementById("z0_m");
+
+      this.zp02_mm = document.getElementById("zp02_mm");
+      this.zp02_cm = document.getElementById("zp02_cm");
+      this.zp02_m = document.getElementById("zp02_m");
+    }
+    
+    setupEventListeners() {
+      // Unit synchronization setup
+      this.syncAndCalculate(this.f_mm, [this.f_cm, this.f_m], [0.1, 0.001]);
+      this.syncAndCalculate(this.f_cm, [this.f_mm, this.f_m], [10, 0.01]);
+      this.syncAndCalculate(this.f_m, [this.f_mm, this.f_cm], [1000, 100]);
+
+      this.syncAndCalculate(this.w01_um, [this.w01_mm, this.w01_cm], [0.001, 0.0001]);
+      this.syncAndCalculate(this.w01_mm, [this.w01_um, this.w01_cm], [1000, 0.1]);
+      this.syncAndCalculate(this.w01_cm, [this.w01_um, this.w01_mm], [10000, 10]);
+
+      this.syncAndCalculate(this.z1_mm, [this.z1_cm, this.z1_m], [0.1, 0.001]);
+      this.syncAndCalculate(this.z1_cm, [this.z1_mm, this.z1_m], [10, 0.01]);
+      this.syncAndCalculate(this.z1_m, [this.z1_mm, this.z1_cm], [1000, 100]);
+
+      this.lambda.addEventListener("input", () => this.calculate());
+    }
+    
+    syncAndCalculate(primary, group, scales) {
+      primary.addEventListener("input", () => {
+        if (document.activeElement !== primary) return;
+        
+        const val = parseFloat(primary.value);
+        if (isNaN(val)) {
+          group.forEach(el => el.value = "");
+          this.calculate();
+          return;
+        }
+        
+        group.forEach((el, i) => {
+          const result = val * scales[i];
+          el.value = this.formatNumber(result);
+        });
+        
+        this.calculate();
+      });
+    }
+    
+    formatNumber(num) {
+      if (Math.abs(num) < 1e-10) return "0";
+      if (Math.abs(num) >= 1e6 || Math.abs(num) < 1e-4) {
+        return num.toExponential(4);
+      }
+      return num.toFixed(5).replace(/\.?0+$/, "");
+    }
+    
+    calculate() {
+      const λ = parseFloat(this.lambda.value) * 1e-9;  // Convert nm to m
+      const f = parseFloat(this.f_m.value);            // Focal length in m
+      const w0 = parseFloat(this.w01_cm.value) * 0.01; // Initial beam waist in m
+      const z1 = parseFloat(this.z1_m.value);          // Propagation distance in m
+      
+      // Check if all required values are valid
+      if ([λ, f, w0, z1].some(v => isNaN(v) || v <= 0)) {
+        this.clearOutputs();
+        return;
+      }
+
+      const π = Math.PI;
+      
+      // Calculate Rayleigh range for initial beam
+      const z0 = π * w0 ** 2 / λ;
+      
+      // Calculate new beam waist after focusing
+      const w02 = 1 / Math.sqrt((π * w0 / λ) ** 2 / f ** 2 + (1 - z1 / f) ** 2 * (λ / (π * w0)) ** 2);
+      
+      // Calculate propagation distance through lens
+      const z02 = f + f ** 2 * (z1 - f) / ((z1 - f) ** 2 + z0 ** 2);
+
+      // Set calculated beam waist outputs
+      this.w02_um.value = this.formatNumber(w02 * 1e6);
+      this.w02_mm.value = this.formatNumber(w02 * 1e3);
+      this.w02_cm.value = this.formatNumber(w02 * 100);
+
+      // Set Rayleigh range outputs
+      this.z0_m.value = this.formatNumber(z0);
+      this.z0_cm.value = this.formatNumber(z0 * 100);
+      this.z0_mm.value = this.formatNumber(z0 * 1e3);
+
+      // Set propagation distance outputs
+      this.zp02_m.value = this.formatNumber(z02);
+      this.zp02_cm.value = this.formatNumber(z02 * 100);
+      this.zp02_mm.value = this.formatNumber(z02 * 1e3);
+    }
+    
+    clearOutputs() {
+      const outputs = [
+        this.w02_um, this.w02_mm, this.w02_cm,
+        this.z0_mm, this.z0_cm, this.z0_m,
+        this.zp02_mm, this.zp02_cm, this.zp02_m
+      ];
+      
+      outputs.forEach(output => output.value = "");
+    }
+  }
+
+  // DOM이 준비되면 계산기 초기화
+  function initializeBeamCalculator() {
+    window[BeamCalcNamespace] = new GaussianBeamCalculator();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeBeamCalculator);
+  } else {
+    initializeBeamCalculator();
+  }
+})();
+</script>
+</body>
+</html>

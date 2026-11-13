@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malus's Law Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .simulation-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .component {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 20px;
+        }
+        
+        .component h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        
+        .polarizer-container {
+            position: relative;
+        }
+        
+        .polarizer {
+            width: 160px;
+            height: 160px;
+            border: 2px solid #666;
+            border-radius: 50%;
+            position: relative;
+            background: #fff;
+            cursor: grab;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .polarizer:active {
+            cursor: grabbing;
+        }
+        
+        .polarizer-line {
+            position: absolute;
+            width: 3px;
+            height: 60px;
+            background: #d9534f;
+            left: 50%;
+            top: 50%;
+            transform-origin: 50% 100%;
+            border-radius: 2px;
+            margin-left: -1.5px;
+            margin-top: -60px;
+        }
+        
+        .polarizer-line::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 12px solid #d9534f;
+        }
+        
+        .analyzer-line {
+            background: #5bc0de;
+        }
+        
+        .analyzer-line::after {
+            border-bottom-color: #5bc0de;
+        }
+        
+        .angle-markings {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        .angle-mark {
+            position: absolute;
+            background: #333;
+            transform-origin: center;
+            left: 50%;
+            top: 50%;
+        }
+        
+        .major-mark {
+            width: 2px;
+            height: 15px;
+            margin-left: -1px;
+            margin-top: -75px;
+        }
+        
+        .minor-mark {
+            width: 1px;
+            height: 8px;
+            margin-left: -0.5px;
+            margin-top: -75px;
+        }
+        
+        .angle-number {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            left: 50%;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: -10px;
+            margin-top: -10px;
+        }
+        
+        .center-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .angle-display {
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            background: #f8f9fa;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .light-beam {
+            width: 100px;
+            height: 8px;
+            background: linear-gradient(90deg, 
+                rgba(255,193,7,0.8), 
+                rgba(255,193,7,0.6), 
+                rgba(255,193,7,0.4));
+            border-radius: 4px;
+            margin: 0 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .light-beam::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255,255,255,0.8), 
+                transparent);
+            animation: shine 2s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 20px solid #666;
+            transform: rotate(90deg);
+            margin: 0 10px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .control-group h4 {
+            margin-top: 0;
+            text-align: center;
+            color: #333;
+        }
+        
+        .angle-input {
+            width: 80px;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #fff;
+            color: #333;
+            text-align: center;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        
+        .angle-input:focus {
+            outline: none;
+            border-color: #5bc0de;
+            box-shadow: 0 0 5px rgba(91,192,222,0.3);
+        }
+        
+        .slider {
+            width: 200px;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            margin: 10px 0;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #5bc0de;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .info-panel {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        
+        .formula {
+            font-size: 1.3em;
+            text-align: center;
+            margin: 15px 0;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .intensity-display {
+            font-size: 1.4em;
+            text-align: center;
+            margin: 15px 0;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .light-source {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffc107, #ff8f00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            box-shadow: 0 2px 8px rgba(255,193,7,0.3);
+        }
+        
+        .detector {
+            width: 80px;
+            height: 80px;
+            background: #666;
+            border: 2px solid #999;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            text-align: center;
+            padding: 5px;
+            color: #fff;
+        }
+        
+        .detector-intensity {
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 5px;
+            color: #5bc0de;
+        }
+        
+        .reset-btn {
+            background: #5bc0de;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .reset-btn:hover {
+            background: #46b8da;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Malus's Law Simulator: Animation</h1>
+        
+        <div class="simulation-area">
+            <div class="component">
+                <h3>Light Source</h3>
+                <div class="light-source">💡</div>
+            </div>
+            
+            <div class="arrow"></div>
+            <div class="light-beam" id="beam1"></div>
+            
+            <div class="component">
+                <h3>Polarizer</h3>
+                <div class="polarizer-container">
+                    <div class="polarizer" id="polarizer" data-angle="0">
+                        <div class="angle-markings" id="polarizer-markings"></div>
+                        <div class="polarizer-line" id="polarizer-line"></div>
+                        <div class="center-dot"></div>
+                    </div>
+                </div>
+                <div class="angle-display" id="polarizer-angle">0°</div>
+            </div>
+            
+            <div class="arrow"></div>
+            <div class="light-beam" id="beam2"></div>
+            
+            <div class="component">
+                <h3>Analyzer</h3>
+                <div class="polarizer-container">
+                    <div class="polarizer" id="analyzer" data-angle="0">
+                        <div class="angle-markings" id="analyzer-markings"></div>
+                        <div class="polarizer-line analyzer-line" id="analyzer-line"></div>
+                        <div class="center-dot"></div>
+                    </div>
+                </div>
+                <div class="angle-display" id="analyzer-angle">0°</div>
+            </div>
+            
+            <div class="arrow"></div>
+            <div class="light-beam" id="beam3"></div>
+            
+            <div class="component">
+                <h3>Detector</h3>
+                <div class="detector" id="detector">
+                    <div>Light<br>Sensor</div>
+                    <div class="detector-intensity" id="detector-intensity">1.00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h4>Polarizer Angle</h4>
+                <input type="range" class="slider" id="polarizer-slider" 
+                       min="0" max="360" value="0" step="1">
+                <input type="number" class="angle-input" id="polarizer-input" 
+                       min="0" max="360" value="0" step="1">
+                <div id="polarizer-value">0°</div>
+            </div>
+            
+            <div class="control-group">
+                <h4>Analyzer Angle</h4>
+                <input type="range" class="slider" id="analyzer-slider" 
+                       min="0" max="360" value="0" step="1">
+                <input type="number" class="angle-input" id="analyzer-input" 
+                       min="0" max="360" value="0" step="1">
+                <div id="analyzer-value">0°</div>
+            </div>
+            
+            <div class="control-group">
+                <h4>Controls</h4>
+                <button class="reset-btn" onclick="resetSimulation()">Reset</button>
+            </div>
+        </div>
+        
+
+    </div>
+
+    <script>
+        let isDragging = false;
+        let currentElement = null;
+        
+        // Initialize simulation
+        function initSimulation() {
+            setupDragRotation();
+            setupSliders();
+            createAngleMarkings();
+            updateSimulation();
+        }
+        
+        // Create angle markings for polarizers
+        function createAngleMarkings() {
+            const polarizerMarkings = document.getElementById('polarizer-markings');
+            const analyzerMarkings = document.getElementById('analyzer-markings');
+            
+            [polarizerMarkings, analyzerMarkings].forEach(container => {
+                // Create markings for every 10 degrees (major) and 5 degrees (minor)
+                for (let angle = 0; angle < 360; angle += 5) {
+                    const isMajor = angle % 30 === 0;
+                    const isNumbered = angle % 30 === 0;
+                    
+                    // Create tick mark
+                    const mark = document.createElement('div');
+                    mark.className = `angle-mark ${isMajor ? 'major-mark' : 'minor-mark'}`;
+                    mark.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+                    container.appendChild(mark);
+                    
+                    // Add numbers for major marks
+                    if (isNumbered) {
+                        const number = document.createElement('div');
+                        number.className = 'angle-number';
+                        number.textContent = angle;
+                        
+                        // Calculate position for the number
+                        const radius = 65; // Distance from center
+                        const radian = (angle - 90) * Math.PI / 180; // -90 to start from top
+                        const x = Math.cos(radian) * radius;
+                        const y = Math.sin(radian) * radius;
+                        
+                        number.style.transform = `translate(${x}px, ${y}px)`;
+                        container.appendChild(number);
+                    }
+                }
+            });
+        }
+        
+        // Setup drag rotation for polarizers
+        function setupDragRotation() {
+            const polarizer = document.getElementById('polarizer');
+            const analyzer = document.getElementById('analyzer');
+            
+            [polarizer, analyzer].forEach(element => {
+                element.addEventListener('mousedown', startDrag);
+                element.addEventListener('touchstart', startDrag);
+            });
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+        }
+        
+        function startDrag(e) {
+            isDragging = true;
+            currentElement = e.currentTarget;
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!isDragging || !currentElement) return;
+            
+            e.preventDefault();
+            const rect = currentElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const clientX = e.clientX || e.touches[0].clientX;
+            const clientY = e.clientY || e.touches[0].clientY;
+            
+            const angle = Math.atan2(clientY - centerY, clientX - centerX);
+            const degrees = ((angle * 180 / Math.PI) + 90 + 360) % 360;
+            
+            setAngle(currentElement.id, degrees);
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+            currentElement = null;
+        }
+        
+        // Setup sliders and input fields
+        function setupSliders() {
+            const polarizerSlider = document.getElementById('polarizer-slider');
+            const analyzerSlider = document.getElementById('analyzer-slider');
+            const polarizerInput = document.getElementById('polarizer-input');
+            const analyzerInput = document.getElementById('analyzer-input');
+            
+            polarizerSlider.addEventListener('input', (e) => {
+                setAngle('polarizer', parseFloat(e.target.value));
+            });
+            
+            analyzerSlider.addEventListener('input', (e) => {
+                setAngle('analyzer', parseFloat(e.target.value));
+            });
+            
+            polarizerInput.addEventListener('input', (e) => {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) value = 0;
+                if (value < 0) value = 0;
+                if (value > 360) value = 360;
+                e.target.value = value;
+                setAngle('polarizer', value);
+            });
+            
+            analyzerInput.addEventListener('input', (e) => {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) value = 0;
+                if (value < 0) value = 0;
+                if (value > 360) value = 360;
+                e.target.value = value;
+                setAngle('analyzer', value);
+            });
+            
+            // Handle Enter key and blur events for input validation
+            [polarizerInput, analyzerInput].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    }
+                });
+                
+                input.addEventListener('blur', (e) => {
+                    let value = parseFloat(e.target.value);
+                    if (isNaN(value) || value < 0) value = 0;
+                    if (value > 360) value = 360;
+                    e.target.value = value;
+                    const elementId = input.id.includes('polarizer') ? 'polarizer' : 'analyzer';
+                    setAngle(elementId, value);
+                });
+            });
+        }
+        
+        // Set angle for polarizer or analyzer
+        function setAngle(elementId, angle) {
+            const element = document.getElementById(elementId);
+            const line = document.getElementById(elementId + '-line');
+            const display = document.getElementById(elementId + '-angle');
+            const slider = document.getElementById(elementId + '-slider');
+            const input = document.getElementById(elementId + '-input');
+            const value = document.getElementById(elementId + '-value');
+            
+            const normalizedAngle = ((angle % 360) + 360) % 360;
+            
+            element.setAttribute('data-angle', normalizedAngle);
+            line.style.transform = `rotate(${normalizedAngle}deg)`;
+            display.textContent = Math.round(normalizedAngle) + '°';
+            slider.value = normalizedAngle;
+            input.value = Math.round(normalizedAngle);
+            value.textContent = Math.round(normalizedAngle) + '°';
+            
+            updateSimulation();
+        }
+        
+        // Update simulation based on current angles
+        function updateSimulation() {
+            const polarizerAngle = parseFloat(document.getElementById('polarizer').getAttribute('data-angle'));
+            const analyzerAngle = parseFloat(document.getElementById('analyzer').getAttribute('data-angle'));
+            
+            // Calculate angle difference
+            let angleDiff = Math.abs(analyzerAngle - polarizerAngle);
+            angleDiff = Math.min(angleDiff, 360 - angleDiff);
+            
+            // Apply Malus's law: I = I₀ × cos²(θ)
+            const radians = (angleDiff * Math.PI) / 180;
+            const intensity = Math.cos(radians) ** 2;
+            
+            // Update detector intensity display
+            document.getElementById('detector-intensity').textContent = 
+                intensity.toFixed(2);
+            
+            // Update light beams intensity
+            updateBeamIntensity('beam2', 0.7); // After polarizer
+            updateBeamIntensity('beam3', intensity); // After analyzer
+            
+            // Update detector
+            updateDetector(intensity);
+        }
+        
+        // Update beam intensity visually
+        function updateBeamIntensity(beamId, intensity) {
+            const beam = document.getElementById(beamId);
+            const alpha = 0.4 + (intensity * 0.6); // Minimum 0.4, maximum 1.0
+            beam.style.background = `linear-gradient(90deg, 
+                rgba(255,193,7,${alpha}), 
+                rgba(255,193,7,${alpha * 0.8}), 
+                rgba(255,193,7,${alpha * 0.6}))`;
+        }
+        
+        // Update detector display
+        function updateDetector(intensity) {
+            const detector = document.getElementById('detector');
+            const brightness = Math.round(intensity * 255);
+            detector.style.backgroundColor = `rgb(${brightness}, ${brightness}, ${brightness})`;
+            detector.style.color = brightness > 128 ? 'black' : 'white';
+        }
+        
+        // Reset simulation
+        function resetSimulation() {
+            setAngle('polarizer', 0);
+            setAngle('analyzer', 0);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', initSimulation);
+    </script>
+</body>
+</html>

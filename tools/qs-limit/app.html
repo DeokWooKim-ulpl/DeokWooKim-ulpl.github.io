@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q-switching stability limit calculator</title>
+</head>
+<body>
+<!-- Google Sites용 Q-switching Stability Limit Calculator (모바일 반응형) -->
+<div id="qswitch-calculator-container">
+  <style>
+    #qswitch-calculator-container {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    #qswitch-calculator-container * {
+      box-sizing: border-box;
+    }
+    
+    .qswitch-title {
+      font-size: clamp(18px, 4vw, 26px);
+      margin-bottom: 10px;
+      text-align: center;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .qswitch-subtitle {
+      font-size: clamp(14px, 3vw, 18px);
+      margin-top: 10px;
+      margin-bottom: 25px;
+      font-weight: normal;
+      color: #666;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .qswitch-row-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    
+    @media (min-width: 768px) {
+      .qswitch-row-container {
+        flex-direction: row;
+        gap: 25px;
+      }
+    }
+
+    .qswitch-table-box {
+      flex: 1;
+      min-width: 300px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .qswitch-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .qswitch-table th {
+      text-align: center;
+      padding: 15px 12px;
+      background-color: #afafaf;
+      color: black;
+      border: none;
+      font-size: clamp(14px, 2.5vw, 16px);
+      font-weight: 600;
+    }
+
+    .qswitch-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+    
+    @media (max-width: 480px) {
+      .qswitch-table td {
+        padding: 10px 8px;
+      }
+    }
+
+    .qswitch-param-label {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+      font-size: clamp(12px, 2vw, 14px);
+      line-height: 1.3;
+      width: 60%;
+    }
+    
+    @media (max-width: 768px) {
+      .qswitch-param-label {
+        width: 55%;
+      }
+    }
+
+    .qswitch-input-cell {
+      width: 40%;
+      text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .qswitch-input-cell {
+        width: 45%;
+      }
+    }
+
+    .qswitch-input {
+      width: 100%;
+      max-width: 180px;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background-color: #fff;
+      text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .qswitch-input {
+        max-width: 140px;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .qswitch-input {
+        max-width: 120px;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+    }
+
+    .qswitch-input:focus {
+      outline: none;
+      border-color: #afafaf;
+      box-shadow: 0 0 0 3px rgba(175, 175, 175, 0.1);
+      background-color: #f5f5f5;
+    }
+
+    .qswitch-unit {
+      color: #6c757d;
+      font-size: 12px;
+      font-weight: 500;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    
+    @media (max-width: 480px) {
+      .qswitch-unit {
+        font-size: 10px;
+        margin-left: 4px;
+      }
+    }
+
+    .qswitch-result-value {
+      text-align: center;
+      font-weight: bold;
+      color: #555;
+      font-size: 16px;
+    }
+    
+    @media (max-width: 480px) {
+      .qswitch-result-value {
+        font-size: 14px;
+      }
+    }
+
+    .qswitch-calculate-btn {
+      background-color: #afafaf;
+      color: black;
+      font-size: clamp(14px, 3vw, 18px);
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 20px auto;
+      display: block;
+      font-weight: 600;
+      transition: all 0.3s ease;
+     }
+
+    .qswitch-calculate-btn:hover {
+      background-color: #afafaf;
+      transform: translateY(-2px);
+      }
+
+    .qswitch-calculate-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
+    }
+
+    .qswitch-notice-box {
+      padding: 15px 20px;
+      margin: 0;
+      background-color: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      color: #495057;
+      line-height: 1.5;
+    }
+    
+    @media (max-width: 768px) {
+      .qswitch-notice-box {
+        padding: 12px 15px;
+      }
+    }
+
+    .qswitch-notice-box p {
+      margin: 8px 0;
+    }
+
+    .qswitch-notice-title {
+      font-size: clamp(16px, 4vw, 20px);
+      font-weight: bold;
+      color: black;
+      margin-bottom: 8px;
+    }
+
+    .qswitch-notice-desc {
+      font-size: clamp(13px, 2.5vw, 16px);
+      margin-bottom: 10px;
+    }
+
+    .qswitch-formula {
+      text-align: center;
+      font-size: clamp(16px, 3.5vw, 20px);
+      font-weight: 600;
+      color: #2c3e50;
+      margin: 15px 0;
+      padding: 10px;
+      background-color: #e8f5e8;
+      border-radius: 8px;
+      border-left: 4px solid #27ae60;
+    }
+
+    .qswitch-reference {
+      font-size: clamp(12px, 2.2vw, 14px);
+      text-align: left;
+      margin-top: 15px;
+    }
+
+    .qswitch-reference-link {
+      text-decoration: underline;
+      font-style: italic;
+      color: black;
+      font-weight: 500;
+    }
+
+    /* 호버 효과 */
+    .qswitch-table tr:hover td {
+      background-color: #f8f9fa;
+    }
+    
+    .qswitch-table tr:hover .qswitch-param-label {
+      background-color: #e9ecef;
+    }
+
+    /* 터치 디바이스용 개선 */
+    @media (hover: none) and (pointer: coarse) {
+      .qswitch-input {
+        padding: 12px 14px;
+        font-size: 16px; /* iOS 줌 방지 */
+        border-radius: 10px;
+      }
+      
+      .qswitch-calculate-btn {
+        padding: 15px 30px;
+        font-size: 18px;
+      }
+    }
+
+    /* 테이블 스크롤 */
+    .qswitch-table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 프린트 스타일 */
+    @media print {
+      #qswitch-calculator-container {
+        background-color: white;
+        padding: 10px;
+      }
+      
+      .qswitch-table-box {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      
+      .qswitch-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+
+  <h1 class="qswitch-title">Q-switching Stability Limit Calculator</h1>
+  <h2 class="qswitch-subtitle">(Threshold for Continuous-Wave Mode-Locking)</h2>
+
+  <div class="qswitch-row-container">
+    <!-- Input Parameters -->
+    <div class="qswitch-table-box">
+      <div class="qswitch-table-scroll">
+        <table class="qswitch-table">
+          <tr>
+            <th colspan="2">Input Parameters</th>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Output Coupler Transmission (T<sub>oc</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="Toc" value="1" step="any">
+              <span class="qswitch-unit">%</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Repetition Rate (f<sub>rep</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="RR" value="80" step="any">
+              <span class="qswitch-unit">MHz</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Laser Wavelength (λ)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="lamb" value="1040" step="any">
+              <span class="qswitch-unit">nm</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Beam Waist at Crystal (w<sub>0,crys</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="w0_crys" value="30" step="any">
+              <span class="qswitch-unit">μm</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Beam Waist at Absorber (w<sub>0,abs</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="w0_abs" value="50" step="any">
+              <span class="qswitch-unit">μm</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Emission Cross Section (σ<sub>em</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="sLem" value="2" step="any">
+              <span class="qswitch-unit">×10⁻²⁰ cm²</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Saturation Fluence (F<sub>sat,A</sub>)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="FsatA" value="70" step="any">
+              <span class="qswitch-unit">μJ/cm²</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Modulation Depth (ΔR)</td>
+            <td class="qswitch-input-cell">
+              <input type="number" class="qswitch-input" id="DelR" value="0.6" step="any">
+              <span class="qswitch-unit">%</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Results + Notice -->
+    <div class="qswitch-table-box">
+      <div class="qswitch-table-scroll">
+        <table class="qswitch-table">
+          <tr>
+            <th colspan="2">Results</th>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Critical Pulse Energy (E<sub>p</sub>)</td>
+            <td class="qswitch-result-value">
+              <span id="Ep">-</span> <span class="qswitch-unit">nJ</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="qswitch-param-label">Output Power Threshold (P<sub>out</sub>)</td>
+            <td class="qswitch-result-value">
+              <span id="Pout">-</span> <span class="qswitch-unit">mW</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Notice Box -->
+      <div class="qswitch-notice-box">
+        <p class="qswitch-notice-title">Backgrounds:</p>
+        <p class="qswitch-notice-desc">This calculation is based on the equation below</p>
+        
+        <div class="qswitch-formula">
+          E<sup>2</sup><sub>p,c</sub> = E<sub>sat,L</sub> E<sub>sat,A</sub> ΔR
+        </div>
+        
+        <p class="qswitch-reference">
+          - For more detail, please see, 
+          <span class="qswitch-reference-link">
+            J. Opt. Soc. Am. B, 16(1), 46–56 (1999)
+          </span>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <button class="qswitch-calculate-btn" onclick="calculateQSwitch()">Calculate</button>
+</div>
+
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const QSwitchNamespace = 'QSwitch_' + Date.now();
+  
+  function calculateQSwitch() {
+    const pi = Math.PI;
+    const c = 299792458;  // 광속 [m/s]
+    const h = 6.62e-34;   // 플랑크 상수 [J·s]
+
+    // 입력값 가져오기
+    const Toc = parseFloat(document.getElementById('Toc').value) / 100;  // %를 소수로 변환
+    const RR = parseFloat(document.getElementById('RR').value) * 1e6;    // MHz를 Hz로 변환
+    const lamb = parseFloat(document.getElementById('lamb').value) * 1e-9; // nm를 m로 변환
+    const w0_crys = parseFloat(document.getElementById('w0_crys').value) * 1e-6; // μm를 m로 변환
+    const w0_abs = parseFloat(document.getElementById('w0_abs').value) * 1e-6;   // μm를 m로 변환
+    const sLem = parseFloat(document.getElementById('sLem').value) * 1e-24;      // ×10⁻²⁰ cm²를 m²로 변환
+    const FsatA = parseFloat(document.getElementById('FsatA').value) * 1e-6 / 1e-4; // μJ/cm²를 J/m²로 변환
+    const DelR = parseFloat(document.getElementById('DelR').value) / 100;        // %를 소수로 변환
+
+    // 입력값 유효성 검사
+    if ([Toc, RR, lamb, w0_crys, w0_abs, sLem, FsatA, DelR].some(v => isNaN(v) || v <= 0)) {
+      document.getElementById('Ep').textContent = 'Error';
+      document.getElementById('Pout').textContent = 'Error';
+      return;
+    }
+
+    // 계산
+    const nu = c / lamb;  // 주파수 [Hz]
+    const Acrys = pi * Math.pow(w0_crys, 2) / 2;  // 크리스탈에서의 빔 면적 [m²]
+    const Aabs = pi * Math.pow(w0_abs, 2) / 2;    // 흡수체에서의 빔 면적 [m²]
+
+    const EsatA = FsatA * Aabs;           // 흡수체 포화 에너지 [J]
+    const EsatL = Acrys * h * nu / sLem;  // 레이저 포화 에너지 [J]
+
+    const Ep = Math.sqrt(EsatL * EsatA * DelR);  // 임계 펄스 에너지 [J]
+    const Pout = Ep * Toc * RR;                  // 출력 파워 임계값 [W]
+
+    // 결과 표시
+    document.getElementById('Ep').textContent = (Ep * 1e9).toFixed(2);   // J를 nJ로 변환
+    document.getElementById('Pout').textContent = (Pout * 1e3).toFixed(2); // W를 mW로 변환
+  }
+
+  // 전역 함수로 등록
+  window.calculateQSwitch = calculateQSwitch;
+
+  // 엔터키로 계산 실행
+  document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      calculateQSwitch();
+    }
+  });
+
+  // 입력값 변경 시 자동 계산 (선택사항)
+  const inputs = ['Toc', 'RR', 'lamb', 'w0_crys', 'w0_abs', 'sLem', 'FsatA', 'DelR'];
+  inputs.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', function() {
+        // 실시간 계산을 원한다면 주석 해제
+        // calculateQSwitch();
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

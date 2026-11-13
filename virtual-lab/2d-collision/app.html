@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: #f7f7f7;
+      line-height: 1.4;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: left;
+      color: #333;
+      margin: 0 0 20px 0;
+      }
+    .controls-container {
+      background-color: #e8e8e8;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .input-group { 
+      display: flex; 
+      flex-direction: column; 
+    }
+    .velocity-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    label { 
+      margin-bottom: 5px; 
+      font-weight: bold; 
+      color: #555;
+      font-size: 14px;
+    }
+    input, select {
+      padding: 6px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      background-color: #fff;
+      font-size: 14px;
+    }
+    .slider-container {
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
+      margin-bottom: 15px;
+    }
+    .slider-group { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+    }
+    .slider { 
+      flex: 1; 
+      height: 6px; 
+      border-radius: 4px; 
+      background: #ddd; 
+      outline: none; 
+      -webkit-appearance: none; 
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none; 
+      appearance: none;
+      width: 18px; 
+      height: 18px; 
+      border-radius: 50%;
+      background: #4CAF50; 
+      cursor: pointer;
+    }
+    .slider::-moz-range-thumb {
+      width: 18px; 
+      height: 18px; 
+      border-radius: 50%;
+      background: #4CAF50; 
+      cursor: pointer; 
+      border: none;
+    }
+    .slider-value { 
+      min-width: 50px; 
+      text-align: center; 
+      font-weight: bold; 
+      color: #333;
+      font-size: 14px;
+    }
+    .button-group { 
+      display: flex; 
+      gap: 8px; 
+      justify-content: center; 
+      flex-wrap: wrap; 
+    }
+    button {
+      padding: 8px 16px; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer;
+      font-weight: bold; 
+      transition: background-color 0.3s;
+      font-size: 14px;
+    }
+    button:disabled { 
+      opacity: 0.5; 
+      cursor: not-allowed; 
+    }
+    .start-btn { 
+      background-color: #4CAF50; 
+      color: white; 
+    }
+    .start-btn:hover:not(:disabled) { 
+      background-color: #45a049; 
+    }
+    .pause-btn { 
+      background-color: #ff9800; 
+      color: white; 
+    }
+    .pause-btn:hover:not(:disabled) { 
+      background-color: #e68900; 
+    }
+    .resume-btn { 
+      background-color: #2196F3; 
+      color: white; 
+    }
+    .resume-btn:hover:not(:disabled) { 
+      background-color: #1976D2; 
+    }
+    .reset-btn { 
+      background-color: #f44336; 
+      color: white; 
+    }
+    .reset-btn:hover { 
+      background-color: #d32f2f; 
+    }
+    .download-btn { 
+      background-color: #6c757d; 
+      color: white; 
+    }
+    .download-btn:hover { 
+      background-color: #5a6268; 
+    }
+    .animation-container {
+      background-color: #fff; 
+      border: 2px solid #ccc; 
+      border-radius: 8px;
+      margin-bottom: 15px; 
+      padding: 15px;
+    }
+    .arena-container { 
+      position: relative; 
+      margin: 15px auto;
+      display: flex;
+      justify-content: center;
+    }
+    .arena { 
+      background-color: #f0f0f0; 
+      border: 3px solid #333; 
+      border-radius: 8px; 
+      position: relative;
+      overflow: hidden;
+    }
+    .coordinate-axis {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .axis-line {
+      stroke: #666;
+      stroke-width: 2;
+      opacity: 0.7;
+    }
+    .axis-arrow {
+      stroke: #666;
+      stroke-width: 2;
+      fill: #666;
+      opacity: 0.7;
+    }
+    .axis-label {
+      font-size: 14px;
+      font-weight: bold;
+      fill: #333;
+      opacity: 0.8;
+    }
+    .grid-line {
+      stroke: #ccc;
+      stroke-width: 1;
+      opacity: 0.5;
+    }
+    .object {
+      position: absolute;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: grab; 
+      user-select: none;
+      border: 2px solid #333;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      z-index: 5;
+    }
+    .object:hover:not(.no-drag) {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      border-width: 3px;
+    }
+    .object:active:not(.no-drag) { 
+      cursor: grabbing;
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .object.no-drag { 
+      cursor: default; 
+      pointer-events: none; 
+    }
+    .object1 { 
+      background-color: #2196F3; 
+    }
+    .object2 { 
+      background-color: #f44336; 
+    }
+    .velocity-arrow {
+      position: absolute;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .interactive-arrow {
+      position: absolute;
+      z-index: 15;
+      pointer-events: auto;
+    }
+    .arrow-line {
+      stroke: #333;
+      stroke-width: 3;
+      marker-end: url(#arrowhead);
+    }
+    .arrow-handle {
+      fill: rgba(255, 255, 255, 0.9);
+      stroke: #333;
+      stroke-width: 2;
+      cursor: grab;
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+    }
+    .arrow-handle:hover {
+      fill: rgba(255, 255, 255, 1);
+      stroke-width: 3;
+      r: 10;
+    }
+    .arrow-handle:active {
+      cursor: grabbing;
+      fill: rgba(255, 255, 0, 0.8);
+    }
+    .dragging-arrow {
+      stroke-opacity: 0.8 !important;
+      stroke-width: 4 !important;
+    }
+    .plots-container { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 15px; 
+    }
+    .plot { 
+      background-color: #fff; 
+      border: 1px solid #ccc; 
+      border-radius: 8px; 
+      padding: 8px;
+      min-height: 300px;
+    }
+    .info-display {
+      text-align: center;
+      color: #666;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    @media (max-width: 1200px) {
+      .controls-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .plots-container {
+        grid-template-columns: 1fr;
+      }
+      .button-group {
+        flex-direction: column;
+      }
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>2D Elastic Collision Simulation</h1>
+    
+    <div class="controls-container">
+      <div class="controls-grid">
+        <div class="input-group">
+          <label for="arenaSize">Arena Size (m):</label>
+          <input type="number" id="arenaSize" value="10" min="5" max="20" step="0.5">
+        </div>
+        <div class="input-group">
+          <label for="objectRadius">Object Radius (m):</label>
+          <input type="number" id="objectRadius" value="0.3" min="0.1" max="1" step="0.05">
+        </div>
+        <div class="input-group">
+          <label for="mass1">Object 1 Mass (kg):</label>
+          <input type="number" id="mass1" value="1" min="0.1" max="10" step="0.1">
+        </div>
+        <div class="input-group">
+          <label for="mass2">Object 2 Mass (kg):</label>
+          <input type="number" id="mass2" value="1" min="0.1" max="10" step="0.1">
+        </div>
+        
+        <div class="input-group">
+          <label>Object 1 Initial Position (m):</label>
+          <div class="velocity-group">
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">X-axis (horizontal)</small>
+              <input type="number" id="position1x" value="3" min="0" max="10000" step="0.1" placeholder="x₁">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">Y-axis (vertical)</small>
+              <input type="number" id="position1y" value="3" min="0" max="10000" step="0.1" placeholder="y₁">
+            </div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Object 1 Initial Velocity (m/s):</label>
+          <div class="velocity-group">
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">X-axis (horizontal)</small>
+              <input type="number" id="velocity1x" value="2" min="-10000" max="10000" step="0.1" placeholder="vₓ">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">Y-axis (vertical)</small>
+              <input type="number" id="velocity1y" value="1" min="-10000" max="10000" step="0.1" placeholder="vᵧ">
+            </div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Object 2 Initial Position (m):</label>
+          <div class="velocity-group">
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">X-axis (horizontal)</small>
+              <input type="number" id="position2x" value="7" min="-10000" max="10000" step="0.1" placeholder="x₂">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">Y-axis (vertical)</small>
+              <input type="number" id="position2y" value="7" min="-10000" max="10000" step="0.1" placeholder="y₂">
+            </div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Object 2 Initial Velocity (m/s):</label>
+          <div class="velocity-group">
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">X-axis (horizontal)</small>
+              <input type="number" id="velocity2x" value="-1" min="-10" max="10000" step="0.1" placeholder="vₓ">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <small style="color: #666; margin-bottom: 2px;">Y-axis (vertical)</small>
+              <input type="number" id="velocity2y" value="-0.5" min="-10" max="10000" step="0.1" placeholder="vᵧ">
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <label for="frictionCoeff">Friction Coefficient (μ):</label>
+          <input type="number" id="frictionCoeff" value="0" min="0" max="1" step="0.01">
+        </div>
+        <div class="input-group">
+          <label for="arrowScale">Arrow Length Scale:</label>
+          <input type="number" id="arrowScale" value="10" min="0.1" max="1000" step="0.1">
+        </div>
+        <div class="input-group">
+          <label for="arrowheadSize">Arrowhead Size:</label>
+          <input type="number" id="arrowheadSize" value="0.25" min="0.01" max="10" step="0.01">
+        </div>
+        <div class="input-group">
+          <!-- Empty space for alignment -->
+        </div>
+      </div>
+      
+      <div class="slider-container">
+        <div class="slider-group">
+          <label for="speedSlider" style="min-width: 120px;">Simulation Speed:</label>
+          <input type="range" id="speedSlider" class="slider" min="0.1" max="100" value="1" step="0.1">
+          <span id="speedValue" class="slider-value">1.0x</span>
+        </div>
+        <div class="slider-group">
+          <label for="arrowheadSlider" style="min-width: 120px;">Arrowhead Size:</label>
+          <input type="range" id="arrowheadSlider" class="slider" min="0.01" max="10" value="1.0" step="0.01">
+          <span id="arrowheadValue" class="slider-value">1.0x</span>
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <button id="startBtn" class="start-btn">Start</button>
+        <button id="pauseBtn" class="pause-btn" disabled>Pause</button>
+        <button id="resumeBtn" class="resume-btn" disabled>Resume</button>
+        <button id="resetBtn" class="reset-btn">Reset</button>
+        <button id="downloadBtn" class="download-btn">Download Data</button>
+      </div>
+    </div>
+
+    <div class="animation-container">
+      <div class="arena-container">
+        <div class="arena" id="arena">
+          <svg class="coordinate-axis" id="coordinate-svg">
+            <!-- Grid lines will be added here -->
+          </svg>
+          <svg class="velocity-arrow" id="arrow-svg">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+              </marker>
+              <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#2196F3" />
+              </marker>
+              <marker id="arrowhead-red" markerWidth="10" markerHeight="7" 
+                      refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f44336" />
+              </marker>
+            </defs>
+          </svg>
+          <svg class="interactive-arrow" id="interactive-arrow-svg">
+            <!-- Interactive arrows will be added here -->
+          </svg>
+          <div class="object object1" id="object1">1</div>
+          <div class="object object2" id="object2">2</div>
+        </div>
+      </div>
+      <div class="info-display">
+        Time: <span id="timeDisplay">0.00</span>s | 
+        Collisions: <span id="collisionCount">0</span>
+      </div>
+    </div>
+
+    <div class="plots-container">
+      <div class="plot" id="trajectoryPlot"></div>
+      <div class="plot" id="velocityPlot"></div>
+    </div>
+  </div>
+
+  <script>
+    const COLOR1 = "#2196F3";
+    const COLOR2 = "#f44336";
+
+    class Collision2DSimulation {
+      constructor() {
+        this.isRunning = false;
+        this.isPaused = false;
+        this.time = 0;
+        this.dt = 0.016;
+        this.speedMultiplier = 1.0;
+        this.animationId = null;
+        this.isDragging = false;
+        this.dragObject = null;
+        this.dragOffsetX = 0;
+        this.dragOffsetY = 0;
+        this.isArrowDragging = false;
+        this.dragArrowObject = null; // Changed variable name to avoid conflict
+        this.g = 9.81;
+        this.collisionCount = 0;
+        this.data = { 
+          time: [], 
+          x1: [], y1: [], x2: [], y2: [], 
+          vx1: [], vy1: [], vx2: [], vy2: [] 
+        };
+        
+        this.initializeElements();
+        this.setupEventListeners();
+        this.initializePlots();
+        this.reset();
+      }
+
+      initializeElements() {
+        this.arena = document.getElementById('arena');
+        this.object1 = document.getElementById('object1');
+        this.object2 = document.getElementById('object2');
+        this.arrowSvg = document.getElementById('arrow-svg');
+        this.interactiveArrowSvg = document.getElementById('interactive-arrow-svg');
+        this.coordinateSvg = document.getElementById('coordinate-svg');
+        this.timeDisplay = document.getElementById('timeDisplay');
+        this.collisionCountDisplay = document.getElementById('collisionCount');
+        this.speedSlider = document.getElementById('speedSlider');
+        this.speedValue = document.getElementById('speedValue');
+        this.arrowheadSlider = document.getElementById('arrowheadSlider');
+        this.arrowheadValue = document.getElementById('arrowheadValue');
+        this.startBtn = document.getElementById('startBtn');
+        this.pauseBtn = document.getElementById('pauseBtn');
+        this.resumeBtn = document.getElementById('resumeBtn');
+        this.resetBtn = document.getElementById('resetBtn');
+        this.downloadBtn = document.getElementById('downloadBtn');
+      }
+
+      setupEventListeners() {
+        this.startBtn.addEventListener('click', () => this.start());
+        this.pauseBtn.addEventListener('click', () => this.pause());
+        this.resumeBtn.addEventListener('click', () => this.resume());
+        this.resetBtn.addEventListener('click', () => this.reset());
+        this.downloadBtn.addEventListener('click', () => this.downloadData());
+        
+        this.speedSlider.addEventListener('input', (e) => {
+          this.speedMultiplier = parseFloat(e.target.value);
+          this.speedValue.textContent = this.speedMultiplier.toFixed(1) + 'x';
+        });
+
+        this.arrowheadSlider.addEventListener('input', (e) => {
+          const arrowheadSize = parseFloat(e.target.value);
+          this.arrowheadValue.textContent = arrowheadSize.toFixed(2) + 'x';
+          document.getElementById('arrowheadSize').value = arrowheadSize;
+          this.updateArrowheads();
+          this.updateVelocityArrows();
+        });
+
+        ['arenaSize', 'objectRadius', 'mass1', 'mass2', 'velocity1x', 'velocity1y', 
+         'velocity2x', 'velocity2y', 'arrowScale', 'arrowheadSize', 'position1x', 'position1y', 
+         'position2x', 'position2y'].forEach(id => {
+          document.getElementById(id).addEventListener('input', () => this.updateDisplay());
+        });
+
+        // Update positions when input fields change
+        ['position1x', 'position1y', 'position2x', 'position2y'].forEach(id => {
+          document.getElementById(id).addEventListener('input', () => this.updatePositionsFromInputs());
+        });
+
+        ['velocity1x', 'velocity1y', 'velocity2x', 'velocity2y'].forEach(id => {
+          document.getElementById(id).addEventListener('input', () => this.updateVelocityArrows());
+        });
+
+        this.setupDragListeners();
+        this.setupArrowDragListeners();
+      }
+
+      setupDragListeners() {
+        [this.object1, this.object2].forEach((obj, index) => {
+          obj.addEventListener('mousedown', (e) => this.startDrag(e, index + 1));
+        });
+        document.addEventListener('mousemove', (e) => this.drag(e));
+        document.addEventListener('mouseup', () => this.endDrag());
+      }
+
+      setupArrowDragListeners() {
+        this.interactiveArrowSvg.addEventListener('mousedown', (e) => this.startArrowDrag(e));
+        document.addEventListener('mousemove', (e) => this.handleArrowDragMove(e)); // Fixed function name
+        document.addEventListener('mouseup', () => this.endArrowDrag());
+      }
+
+      startDrag(e, objectIndex) {
+        if (this.isRunning || this.isPaused) return;
+        this.isDragging = true;
+        this.dragObject = objectIndex;
+        e.preventDefault();
+      }
+
+      drag(e) {
+        if (!this.isDragging || this.isRunning || this.isPaused) return;
+        
+        const arenaRect = this.arena.getBoundingClientRect();
+        const mouseX = e.clientX - arenaRect.left;
+        const mouseY = e.clientY - arenaRect.top;
+        const params = this.getParameters();
+        
+        let newX = (mouseX / arenaRect.width) * params.arenaSize;
+        let newY = (mouseY / arenaRect.height) * params.arenaSize;
+        
+        newX = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, newX));
+        newY = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, newY));
+        
+        if (this.dragObject === 1) {
+          this.x1 = newX;
+          this.y1 = newY;
+          // Update input fields in real time
+          document.getElementById('position1x').value = newX.toFixed(2);
+          document.getElementById('position1y').value = newY.toFixed(2);
+        } else {
+          this.x2 = newX;
+          this.y2 = newY;
+          // Update input fields in real time
+          document.getElementById('position2x').value = newX.toFixed(2);
+          document.getElementById('position2y').value = newY.toFixed(2);
+        }
+        this.updateDisplay();
+      }
+
+      endDrag() {
+        this.isDragging = false;
+        this.dragObject = null;
+      }
+
+      startArrowDrag(e) {
+        if (this.isRunning || this.isPaused) return;
+        
+        const target = e.target;
+        if (target.classList.contains('arrow-handle')) {
+          this.isArrowDragging = true;
+          this.dragArrowObject = target.dataset.object; // Updated variable name
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+
+      handleArrowDragMove(e) { // Fixed function name to avoid conflicts
+        if (!this.isArrowDragging || this.isRunning || this.isPaused) return;
+        
+        const arenaRect = this.arena.getBoundingClientRect();
+        const mouseX = e.clientX - arenaRect.left;
+        const mouseY = e.clientY - arenaRect.top;
+        const params = this.getParameters();
+        
+        const arenaPixelSize = parseFloat(this.arena.style.width);
+        
+        // Get object center position in pixels
+        let objectX, objectY;
+        if (this.dragArrowObject === '1') {
+          objectX = (this.x1 / params.arenaSize) * arenaPixelSize;
+          objectY = (this.y1 / params.arenaSize) * arenaPixelSize;
+        } else {
+          objectX = (this.x2 / params.arenaSize) * arenaPixelSize;
+          objectY = (this.y2 / params.arenaSize) * arenaPixelSize;
+        }
+        
+        // Calculate velocity vector from object center to mouse position
+        const deltaX = mouseX - objectX;
+        const deltaY = mouseY - objectY;
+        
+        // Convert pixel distance to velocity with proper scaling
+        const baseScale = 0.02;
+        const scaleFactor = baseScale / (params.arrowScale * 0.3);
+        
+        const vx = deltaX * scaleFactor;
+        const vy = deltaY * scaleFactor;
+        
+        // Limit velocity to reasonable bounds
+        const maxVel = 10;
+        const limitedVx = Math.max(-maxVel, Math.min(maxVel, vx));
+        const limitedVy = Math.max(-maxVel, Math.min(maxVel, vy));
+        
+        // Update input fields with calculated velocities
+        if (this.dragArrowObject === '1') {
+          document.getElementById('velocity1x').value = limitedVx.toFixed(2);
+          document.getElementById('velocity1y').value = limitedVy.toFixed(2);
+        } else {
+          document.getElementById('velocity2x').value = limitedVx.toFixed(2);
+          document.getElementById('velocity2y').value = limitedVy.toFixed(2);
+        }
+        
+        // Update arrow display immediately
+        this.updateVelocityArrows();
+        
+        // Add visual feedback during dragging
+        const currentArrow = this.interactiveArrowSvg.querySelector(`[data-object="${this.dragArrowObject}"]`);
+        if (currentArrow) {
+          currentArrow.parentElement.classList.add('dragging-arrow');
+        }
+      }
+
+      endArrowDrag() {
+        // Remove visual feedback
+        const draggingArrows = this.interactiveArrowSvg.querySelectorAll('.dragging-arrow');
+        draggingArrows.forEach(arrow => arrow.classList.remove('dragging-arrow'));
+        
+        this.isArrowDragging = false;
+        this.dragArrowObject = null; // Updated variable name
+      }
+
+      getParameters() {
+        return {
+          arenaSize: parseFloat(document.getElementById('arenaSize').value),
+          objectRadius: parseFloat(document.getElementById('objectRadius').value),
+          mass1: parseFloat(document.getElementById('mass1').value),
+          mass2: parseFloat(document.getElementById('mass2').value),
+          velocity1x: parseFloat(document.getElementById('velocity1x').value),
+          velocity1y: parseFloat(document.getElementById('velocity1y').value),
+          velocity2x: parseFloat(document.getElementById('velocity2x').value),
+          velocity2y: parseFloat(document.getElementById('velocity2y').value),
+          frictionCoeff: parseFloat(document.getElementById('frictionCoeff').value),
+          arrowScale: parseFloat(document.getElementById('arrowScale').value),
+          arrowheadSize: parseFloat(document.getElementById('arrowheadSize').value),
+          position1x: parseFloat(document.getElementById('position1x').value),
+          position1y: parseFloat(document.getElementById('position1y').value),
+          position2x: parseFloat(document.getElementById('position2x').value),
+          position2y: parseFloat(document.getElementById('position2y').value)
+        };
+      }
+
+      updateObjectLabels() {
+        this.object1.textContent = `1`;
+        this.object2.textContent = `2`;
+      }
+
+      initializePlots() {
+        Plotly.newPlot('trajectoryPlot',
+          [
+            { 
+              x: [], y: [], 
+              mode: 'lines', 
+              name: 'Object 1 Path', 
+              line: { color: COLOR1, width: 2 }, 
+              type: 'scatter' 
+            },
+            { 
+              x: [], y: [], 
+              mode: 'lines', 
+              name: 'Object 2 Path', 
+              line: { color: COLOR2, width: 2 }, 
+              type: 'scatter' 
+            }
+          ],
+          {
+            title: 'Object Trajectories',
+            xaxis: { title: 'X Position (m)', color: '#666' },
+            yaxis: { title: 'Y Position (m)', color: '#666' },
+            legend: { font: { size: 12 } },
+            margin: { l: 50, r: 50, t: 40, b: 40 },
+            plot_bgcolor: '#f9f9f9',
+            paper_bgcolor: '#fff'
+          },
+          { displayModeBar: false, responsive: true }
+        );
+
+        Plotly.newPlot('velocityPlot',
+          [
+            { 
+              x: [], y: [], 
+              name: 'Object 1 Speed', 
+              line: { color: COLOR1, width: 2 }, 
+              type: 'scatter' 
+            },
+            { 
+              x: [], y: [], 
+              name: 'Object 2 Speed', 
+              line: { color: COLOR2, width: 2 }, 
+              type: 'scatter' 
+            }
+          ],
+          {
+            title: 'Speed vs Time',
+            xaxis: { title: 'Time (s)', color: '#666' },
+            yaxis: { title: 'Speed (m/s)', color: '#666' },
+            legend: { font: { size: 12 } },
+            margin: { l: 50, r: 50, t: 40, b: 40 },
+            plot_bgcolor: '#f9f9f9',
+            paper_bgcolor: '#fff'
+          },
+          { displayModeBar: false, responsive: true }
+        );
+      }
+
+      start() {
+        const params = this.getParameters();
+        
+        this.arenaSize = params.arenaSize;
+        this.objectRadius = params.objectRadius;
+        this.mass1 = params.mass1;
+        this.mass2 = params.mass2;
+        this.vx1 = params.velocity1x;
+        this.vy1 = params.velocity1y;
+        this.vx2 = params.velocity2x;
+        this.vy2 = params.velocity2y;
+        this.frictionCoeff = params.frictionCoeff;
+        
+        if (this.x1 === undefined) this.x1 = this.arenaSize * 0.3;
+        if (this.y1 === undefined) this.y1 = this.arenaSize * 0.3;
+        if (this.x2 === undefined) this.x2 = this.arenaSize * 0.7;
+        if (this.y2 === undefined) this.y2 = this.arenaSize * 0.7;
+        
+        this.isRunning = true;
+        this.isPaused = false;
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = false;
+        this.resumeBtn.disabled = true;
+        
+        this.object1.classList.add('no-drag');
+        this.object2.classList.add('no-drag');
+        
+        this.data = { 
+          time: [], 
+          x1: [], y1: [], x2: [], y2: [], 
+          vx1: [], vy1: [], vx2: [], vy2: [] 
+        };
+        this.time = 0;
+        this.collisionCount = 0;
+        
+        this.clearAndResetPlots();
+        this.updateDisplay();
+        this.animate();
+      }
+
+      pause() {
+        this.isPaused = true;
+        this.isRunning = false;
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = true;
+        this.resumeBtn.disabled = false;
+        if (this.animationId) cancelAnimationFrame(this.animationId);
+      }
+
+      resume() {
+        this.isPaused = false;
+        this.isRunning = true;
+        this.startBtn.disabled = true;
+        this.pauseBtn.disabled = false;
+        this.resumeBtn.disabled = true;
+        this.animate();
+      }
+
+      reset() {
+        this.isRunning = false;
+        this.isPaused = false;
+        this.time = 0;
+        this.collisionCount = 0;
+        
+        this.startBtn.disabled = false;
+        this.pauseBtn.disabled = true;
+        this.resumeBtn.disabled = true;
+        
+        if (this.animationId) cancelAnimationFrame(this.animationId);
+        
+        this.object1.classList.remove('no-drag');
+        this.object2.classList.remove('no-drag');
+        
+        this.data = { 
+          time: [], 
+          x1: [], y1: [], x2: [], y2: [], 
+          vx1: [], vy1: [], vx2: [], vy2: [] 
+        };
+        
+        const params = this.getParameters();
+        this.x1 = params.position1x;
+        this.y1 = params.position1y;
+        this.x2 = params.position2x;
+        this.y2 = params.position2y;
+        this.vx1 = params.velocity1x;
+        this.vy1 = params.velocity1y;
+        this.vx2 = params.velocity2x;
+        this.vy2 = params.velocity2y;
+        
+        this.updateObjectLabels();
+        this.updateDisplay();
+        this.initializePlots();
+      }
+
+      clearAndResetPlots() {
+        this.initializePlots();
+      }
+
+      animate() {
+        if (!this.isRunning) return;
+        
+        this.updatePhysics();
+        this.updateDisplay();
+        this.updatePlots();
+        
+        this.time += this.dt * this.speedMultiplier;
+        this.timeDisplay.textContent = this.time.toFixed(2);
+        this.collisionCountDisplay.textContent = this.collisionCount;
+        
+        this.animationId = requestAnimationFrame(() => this.animate());
+      }
+
+      updatePhysics() {
+        const effectiveDt = this.dt * this.speedMultiplier;
+        
+        if (this.frictionCoeff > 0) {
+          const friction1 = this.frictionCoeff * this.mass1 * this.g;
+          const friction2 = this.frictionCoeff * this.mass2 * this.g;
+          
+          const speed1 = Math.sqrt(this.vx1 * this.vx1 + this.vy1 * this.vy1);
+          const speed2 = Math.sqrt(this.vx2 * this.vx2 + this.vy2 * this.vy2);
+          
+          if (speed1 > 0) {
+            const deceleration1 = friction1 / this.mass1;
+            const newSpeed1 = Math.max(0, speed1 - deceleration1 * effectiveDt);
+            const ratio1 = newSpeed1 / speed1;
+            this.vx1 *= ratio1;
+            this.vy1 *= ratio1;
+          }
+          
+          if (speed2 > 0) {
+            const deceleration2 = friction2 / this.mass2;
+            const newSpeed2 = Math.max(0, speed2 - deceleration2 * effectiveDt);
+            const ratio2 = newSpeed2 / speed2;
+            this.vx2 *= ratio2;
+            this.vy2 *= ratio2;
+          }
+        }
+        
+        this.x1 += this.vx1 * effectiveDt;
+        this.y1 += this.vy1 * effectiveDt;
+        this.x2 += this.vx2 * effectiveDt;
+        this.y2 += this.vy2 * effectiveDt;
+        
+        this.handleWallCollisions();
+        this.handleObjectCollision();
+        
+        this.data.time.push(this.time);
+        this.data.x1.push(this.x1);
+        this.data.y1.push(this.y1);
+        this.data.x2.push(this.x2);
+        this.data.y2.push(this.y2);
+        this.data.vx1.push(this.vx1);
+        this.data.vy1.push(this.vy1);
+        this.data.vx2.push(this.vx2);
+        this.data.vy2.push(this.vy2);
+      }
+
+      handleWallCollisions() {
+        if (this.x1 <= this.objectRadius) {
+          this.vx1 = Math.abs(this.vx1);
+          this.x1 = this.objectRadius;
+        }
+        if (this.x1 >= this.arenaSize - this.objectRadius) {
+          this.vx1 = -Math.abs(this.vx1);
+          this.x1 = this.arenaSize - this.objectRadius;
+        }
+        if (this.y1 <= this.objectRadius) {
+          this.vy1 = Math.abs(this.vy1);
+          this.y1 = this.objectRadius;
+        }
+        if (this.y1 >= this.arenaSize - this.objectRadius) {
+          this.vy1 = -Math.abs(this.vy1);
+          this.y1 = this.arenaSize - this.objectRadius;
+        }
+        
+        if (this.x2 <= this.objectRadius) {
+          this.vx2 = Math.abs(this.vx2);
+          this.x2 = this.objectRadius;
+        }
+        if (this.x2 >= this.arenaSize - this.objectRadius) {
+          this.vx2 = -Math.abs(this.vx2);
+          this.x2 = this.arenaSize - this.objectRadius;
+        }
+        if (this.y2 <= this.objectRadius) {
+          this.vy2 = Math.abs(this.vy2);
+          this.y2 = this.objectRadius;
+        }
+        if (this.y2 >= this.arenaSize - this.objectRadius) {
+          this.vy2 = -Math.abs(this.vy2);
+          this.y2 = this.arenaSize - this.objectRadius;
+        }
+      }
+
+      handleObjectCollision() {
+        const dx = this.x2 - this.x1;
+        const dy = this.y2 - this.y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance <= 2 * this.objectRadius) {
+          this.collisionCount++;
+          
+          const nx = dx / distance;
+          const ny = dy / distance;
+          
+          const dvx = this.vx2 - this.vx1;
+          const dvy = this.vy2 - this.vy1;
+          
+          const dvn = dvx * nx + dvy * ny;
+          
+          if (dvn > 0) return;
+          
+          const impulse = 2 * dvn / (this.mass1 + this.mass2);
+          
+          this.vx1 += impulse * this.mass2 * nx;
+          this.vy1 += impulse * this.mass2 * ny;
+          this.vx2 -= impulse * this.mass1 * nx;
+          this.vy2 -= impulse * this.mass1 * ny;
+          
+          const overlap = 2 * this.objectRadius - distance;
+          const separationX = (overlap / 2) * nx;
+          const separationY = (overlap / 2) * ny;
+          
+          this.x1 -= separationX;
+          this.y1 -= separationY;
+          this.x2 += separationX;
+          this.y2 += separationY;
+        }
+      }
+
+      updateDisplay() {
+        const params = this.getParameters();
+        
+        const arenaPixelSize = Math.min(500, window.innerWidth * 0.8);
+        this.arena.style.width = `${arenaPixelSize}px`;
+        this.arena.style.height = `${arenaPixelSize}px`;
+        
+        const objectPixelRadius = (params.objectRadius / params.arenaSize) * arenaPixelSize;
+        
+        this.object1.style.width = `${objectPixelRadius * 2}px`;
+        this.object1.style.height = `${objectPixelRadius * 2}px`;
+        this.object2.style.width = `${objectPixelRadius * 2}px`;
+        this.object2.style.height = `${objectPixelRadius * 2}px`;
+        
+        const x1Pixel = (this.x1 / params.arenaSize) * arenaPixelSize - objectPixelRadius;
+        const y1Pixel = (this.y1 / params.arenaSize) * arenaPixelSize - objectPixelRadius;
+        const x2Pixel = (this.x2 / params.arenaSize) * arenaPixelSize - objectPixelRadius;
+        const y2Pixel = (this.y2 / params.arenaSize) * arenaPixelSize - objectPixelRadius;
+        
+        this.object1.style.left = `${x1Pixel}px`;
+        this.object1.style.top = `${y1Pixel}px`;
+        this.object2.style.left = `${x2Pixel}px`;
+        this.object2.style.top = `${y2Pixel}px`;
+        
+        this.arrowSvg.style.width = `${arenaPixelSize}px`;
+        this.arrowSvg.style.height = `${arenaPixelSize}px`;
+        this.interactiveArrowSvg.style.width = `${arenaPixelSize}px`;
+        this.interactiveArrowSvg.style.height = `${arenaPixelSize}px`;
+        this.coordinateSvg.style.width = `${arenaPixelSize}px`;
+        this.coordinateSvg.style.height = `${arenaPixelSize}px`;
+        
+        this.updateCoordinateSystem();
+        this.updateArrowheads();
+        this.updateVelocityArrows();
+        this.updateObjectLabels();
+      }
+
+      updatePositionsFromInputs() {
+        if (this.isRunning || this.isPaused) return;
+        
+        const params = this.getParameters();
+        
+        // Update internal position variables from input fields
+        this.x1 = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, params.position1x));
+        this.y1 = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, params.position1y));
+        this.x2 = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, params.position2x));
+        this.y2 = Math.max(params.objectRadius, Math.min(params.arenaSize - params.objectRadius, params.position2y));
+        
+        // Update display to reflect new positions
+        this.updateDisplay();
+      }
+
+      updateArrowheads() {
+        const params = this.getParameters();
+        const arrowheadSize = Math.max(0.01, params.arrowheadSize); // Ensure minimum size
+        
+        // Update all arrowhead markers with new size
+        const markers = ['arrowhead', 'arrowhead-blue', 'arrowhead-red'];
+        markers.forEach(markerId => {
+          const marker = document.getElementById(markerId);
+          if (marker) {
+            const baseWidth = 10;
+            const baseHeight = 7;
+            const width = baseWidth * arrowheadSize;
+            const height = baseHeight * arrowheadSize;
+            
+            marker.setAttribute('markerWidth', width);
+            marker.setAttribute('markerHeight', height);
+            marker.setAttribute('refX', width * 0.9);
+            marker.setAttribute('refY', height * 0.5);
+            
+            const polygon = marker.querySelector('polygon');
+            if (polygon) {
+              polygon.setAttribute('points', `0 0, ${width} ${height/2}, 0 ${height}`);
+            }
+          }
+        });
+      }
+
+      updateCoordinateSystem() {
+        const params = this.getParameters();
+        const arenaPixelSize = parseFloat(this.arena.style.width);
+        
+        this.coordinateSvg.innerHTML = '';
+        
+        // Add grid lines
+        const gridSpacing = params.arenaSize / 10;
+        for (let i = 0; i <= 10; i++) {
+          const pos = (i / 10) * arenaPixelSize;
+          
+          const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          vLine.classList.add('grid-line');
+          vLine.setAttribute('x1', pos);
+          vLine.setAttribute('y1', 0);
+          vLine.setAttribute('x2', pos);
+          vLine.setAttribute('y2', arenaPixelSize);
+          this.coordinateSvg.appendChild(vLine);
+          
+          const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          hLine.classList.add('grid-line');
+          hLine.setAttribute('x1', 0);
+          hLine.setAttribute('y1', pos);
+          hLine.setAttribute('x2', arenaPixelSize);
+          hLine.setAttribute('y2', pos);
+          this.coordinateSvg.appendChild(hLine);
+        }
+        
+        // Origin point (top-left corner)
+        const origin = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        origin.classList.add('axis-arrow');
+        origin.setAttribute('cx', 0);
+        origin.setAttribute('cy', 0);
+        origin.setAttribute('r', '4');
+        origin.setAttribute('fill', '#333');
+        this.coordinateSvg.appendChild(origin);
+        
+        // Origin label
+        const originLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        originLabel.classList.add('axis-label');
+        originLabel.setAttribute('x', 8);
+        originLabel.setAttribute('y', 15);
+        originLabel.setAttribute('text-anchor', 'start');
+        originLabel.setAttribute('font-size', '12');
+        originLabel.textContent = 'Origin (0,0)';
+        this.coordinateSvg.appendChild(originLabel);
+        
+        // X-axis (horizontal, pointing right from top-left)
+        const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxis.classList.add('axis-line');
+        xAxis.setAttribute('x1', 0);
+        xAxis.setAttribute('y1', 20);
+        xAxis.setAttribute('x2', arenaPixelSize - 20);
+        xAxis.setAttribute('y2', 20);
+        this.coordinateSvg.appendChild(xAxis);
+        
+        // X-axis arrow (pointing right)
+        const xArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        xArrow.classList.add('axis-arrow');
+        xArrow.setAttribute('points', `${arenaPixelSize - 20},15 ${arenaPixelSize - 10},20 ${arenaPixelSize - 20},25`);
+        this.coordinateSvg.appendChild(xArrow);
+        
+        // Y-axis (vertical, pointing down from top-left)
+        const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        yAxis.classList.add('axis-line');
+        yAxis.setAttribute('x1', 20);
+        yAxis.setAttribute('y1', 0);
+        yAxis.setAttribute('x2', 20);
+        yAxis.setAttribute('y2', arenaPixelSize - 20);
+        this.coordinateSvg.appendChild(yAxis);
+        
+        // Y-axis arrow (pointing down)
+        const yArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        yArrow.classList.add('axis-arrow');
+        yArrow.setAttribute('points', `15,${arenaPixelSize - 20} 20,${arenaPixelSize - 10} 25,${arenaPixelSize - 20}`);
+        this.coordinateSvg.appendChild(yArrow);
+        
+        // X-axis label (+X direction)
+        const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        xLabel.classList.add('axis-label');
+        xLabel.setAttribute('x', arenaPixelSize - 10);
+        xLabel.setAttribute('y', 15);
+        xLabel.setAttribute('text-anchor', 'middle');
+        xLabel.setAttribute('font-size', '14');
+        xLabel.textContent = '+X';
+        this.coordinateSvg.appendChild(xLabel);
+        
+        // Y-axis label (+Y direction)
+        const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        yLabel.classList.add('axis-label');
+        yLabel.setAttribute('x', 35);
+        yLabel.setAttribute('y', arenaPixelSize - 5);
+        yLabel.setAttribute('text-anchor', 'middle');
+        yLabel.setAttribute('font-size', '14');
+        yLabel.textContent = '+Y';
+        this.coordinateSvg.appendChild(yLabel);
+        
+        // Max arena labels
+        const maxXLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        maxXLabel.classList.add('axis-label');
+        maxXLabel.setAttribute('x', arenaPixelSize - 5);
+        maxXLabel.setAttribute('y', arenaPixelSize - 5);
+        maxXLabel.setAttribute('text-anchor', 'end');
+        maxXLabel.setAttribute('font-size', '10');
+        maxXLabel.setAttribute('opacity', '0.7');
+        maxXLabel.textContent = 'Max Arena';
+        this.coordinateSvg.appendChild(maxXLabel);
+      }
+
+      updateVelocityArrows() {
+        const params = this.getParameters();
+        const arenaPixelSize = parseFloat(this.arena.style.width) || 500;
+        
+        const existingArrows = this.arrowSvg.querySelectorAll('.velocity-arrow-line');
+        existingArrows.forEach(arrow => arrow.remove());
+        
+        const existingInteractiveArrows = this.interactiveArrowSvg.querySelectorAll('.interactive-arrow-element');
+        existingInteractiveArrows.forEach(arrow => arrow.remove());
+        
+        if (!this.isRunning && !this.isPaused) {
+          this.drawVelocityArrow(this.x1, this.y1, params.velocity1x, params.velocity1y, params, arenaPixelSize, '1');
+          this.drawVelocityArrow(this.x2, this.y2, params.velocity2x, params.velocity2y, params, arenaPixelSize, '2');
+        }
+      }
+
+      drawVelocityArrow(x, y, vx, vy, params, arenaPixelSize, objId) {
+        const speed = Math.sqrt(vx * vx + vy * vy);
+        if (speed === 0) return;
+        
+        const centerX = (x / params.arenaSize) * arenaPixelSize;
+        const centerY = (y / params.arenaSize) * arenaPixelSize;
+        
+        // Enhanced arrow length calculation for better proportionality
+        const baseArrowLength = 50; // Base length in pixels
+        const arrowLength = Math.max(20, speed * params.arrowScale * baseArrowLength);
+        const maxArrowLength = arenaPixelSize * 0.4; // Max 40% of arena size
+        const finalArrowLength = Math.min(arrowLength, maxArrowLength);
+        
+        const endX = centerX + (vx / speed) * finalArrowLength;
+        const endY = centerY + (vy / speed) * finalArrowLength;
+        
+        const color = objId === '1' ? COLOR1 : COLOR2;
+        const markerUrl = objId === '1' ? 'url(#arrowhead-blue)' : 'url(#arrowhead-red)';
+        
+        // Static arrow for display
+        const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        arrow.classList.add('velocity-arrow-line');
+        arrow.setAttribute('x1', centerX);
+        arrow.setAttribute('y1', centerY);
+        arrow.setAttribute('x2', endX);
+        arrow.setAttribute('y2', endY);
+        arrow.setAttribute('stroke', color);
+        arrow.setAttribute('stroke-width', '3');
+        arrow.setAttribute('marker-end', markerUrl);
+        this.arrowSvg.appendChild(arrow);
+        
+        // Interactive arrow for dragging (wider stroke for easier interaction)
+        const interactiveArrow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        interactiveArrow.classList.add('interactive-arrow-element');
+        interactiveArrow.setAttribute('x1', centerX);
+        interactiveArrow.setAttribute('y1', centerY);
+        interactiveArrow.setAttribute('x2', endX);
+        interactiveArrow.setAttribute('y2', endY);
+        interactiveArrow.setAttribute('stroke', color);
+        interactiveArrow.setAttribute('stroke-width', '8');
+        interactiveArrow.setAttribute('stroke-opacity', '0.2');
+        interactiveArrow.setAttribute('marker-end', markerUrl);
+        this.interactiveArrowSvg.appendChild(interactiveArrow);
+        
+        // Enhanced interactive handle at arrow tip
+        const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        handle.classList.add('interactive-arrow-element', 'arrow-handle');
+        handle.setAttribute('cx', endX);
+        handle.setAttribute('cy', endY);
+        handle.setAttribute('r', '10');
+        handle.setAttribute('data-object', objId);
+        handle.setAttribute('fill', color);
+        handle.setAttribute('fill-opacity', '0.8');
+        handle.setAttribute('stroke', '#fff');
+        handle.setAttribute('stroke-width', '2');
+        this.interactiveArrowSvg.appendChild(handle);
+        
+        // Add speed indicator text near the arrow
+        const speedText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        speedText.classList.add('interactive-arrow-element');
+        speedText.setAttribute('x', centerX + (endX - centerX) * 0.7);
+        speedText.setAttribute('y', centerY + (endY - centerY) * 0.7 - 15);
+        speedText.setAttribute('fill', color);
+        speedText.setAttribute('font-size', '12');
+        speedText.setAttribute('font-weight', 'bold');
+        speedText.setAttribute('text-anchor', 'middle');
+        speedText.setAttribute('pointer-events', 'none');
+        speedText.textContent = `${speed.toFixed(1)} m/s`;
+        this.interactiveArrowSvg.appendChild(speedText);
+        
+        // Add position indicator text near each object (only when not running)
+        if (!this.isRunning && !this.isPaused) {
+          // Position text for object 1
+          const pos1Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          pos1Text.classList.add('interactive-arrow-element');
+          pos1Text.setAttribute('x', centerX + 25);
+          pos1Text.setAttribute('y', centerY - 25);
+          pos1Text.setAttribute('fill', color);
+          pos1Text.setAttribute('font-size', '11');
+          pos1Text.setAttribute('font-weight', 'bold');
+          pos1Text.setAttribute('pointer-events', 'none');
+          pos1Text.textContent = objId === '1' ? 
+            `(${this.x1.toFixed(1)}, ${this.y1.toFixed(1)})` : 
+            `(${this.x2.toFixed(1)}, ${this.y2.toFixed(1)})`;
+          this.interactiveArrowSvg.appendChild(pos1Text);
+        }
+      }
+
+      updatePlots() {
+        if (this.data.time.length % 5 === 0 && this.data.time.length > 0) {
+          const speed1 = this.data.vx1.map((vx, i) => 
+            Math.sqrt(vx * vx + this.data.vy1[i] * this.data.vy1[i])
+          );
+          const speed2 = this.data.vx2.map((vx, i) => 
+            Math.sqrt(vx * vx + this.data.vy2[i] * this.data.vy2[i])
+          );
+          
+          Plotly.react('trajectoryPlot', [
+            { 
+              x: [...this.data.x1], 
+              y: [...this.data.y1], 
+              mode: 'lines', 
+              name: 'Object 1 Path', 
+              line: { color: COLOR1, width: 2 }, 
+              type: 'scatter' 
+            },
+            { 
+              x: [...this.data.x2], 
+              y: [...this.data.y2], 
+              mode: 'lines', 
+              name: 'Object 2 Path', 
+              line: { color: COLOR2, width: 2 }, 
+              type: 'scatter' 
+            }
+          ], {
+            title: 'Object Trajectories',
+            xaxis: { title: 'X Position (m)', color: '#666' },
+            yaxis: { title: 'Y Position (m)', color: '#666' },
+            legend: { font: { size: 12 } },
+            margin: { l: 50, r: 50, t: 40, b: 40 },
+            plot_bgcolor: '#f9f9f9',
+            paper_bgcolor: '#fff'
+          });
+          
+          Plotly.react('velocityPlot', [
+            { 
+              x: [...this.data.time], 
+              y: speed1, 
+              name: 'Object 1 Speed', 
+              line: { color: COLOR1, width: 2 }, 
+              type: 'scatter' 
+            },
+            { 
+              x: [...this.data.time], 
+              y: speed2, 
+              name: 'Object 2 Speed', 
+              line: { color: COLOR2, width: 2 }, 
+              type: 'scatter' 
+            }
+          ], {
+            title: 'Speed vs Time',
+            xaxis: { title: 'Time (s)', color: '#666' },
+            yaxis: { title: 'Speed (m/s)', color: '#666' },
+            legend: { font: { size: 12 } },
+            margin: { l: 50, r: 50, t: 40, b: 40 },
+            plot_bgcolor: '#f9f9f9',
+            paper_bgcolor: '#fff'
+          });
+        }
+      }
+
+      downloadData() {
+        let csvContent = 'Time(s),X1(m),Y1(m),X2(m),Y2(m),VX1(m/s),VY1(m/s),VX2(m/s),VY2(m/s),Speed1(m/s),Speed2(m/s)\n';
+        
+        for (let i = 0; i < this.data.time.length; i++) {
+          const speed1 = Math.sqrt(this.data.vx1[i] * this.data.vx1[i] + this.data.vy1[i] * this.data.vy1[i]);
+          const speed2 = Math.sqrt(this.data.vx2[i] * this.data.vx2[i] + this.data.vy2[i] * this.data.vy2[i]);
+          
+          csvContent += `${this.data.time[i].toFixed(3)},` +
+                       `${this.data.x1[i].toFixed(3)},${this.data.y1[i].toFixed(3)},` +
+                       `${this.data.x2[i].toFixed(3)},${this.data.y2[i].toFixed(3)},` +
+                       `${this.data.vx1[i].toFixed(3)},${this.data.vy1[i].toFixed(3)},` +
+                       `${this.data.vx2[i].toFixed(3)},${this.data.vy2[i].toFixed(3)},` +
+                       `${speed1.toFixed(3)},${speed2.toFixed(3)}\n`;
+        }
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '2d_collision_simulation_data.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        const simulation = new Collision2DSimulation();
+      });
+    } else {
+      const simulation = new Collision2DSimulation();
+    }
+  </script>
+</body>
+</html>

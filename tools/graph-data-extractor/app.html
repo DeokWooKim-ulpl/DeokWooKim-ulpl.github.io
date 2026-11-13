@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Extractor from Graph</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --white-color: #fff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #343a40;
+        }
+
+        .control-panel-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .control-group {
+            background-color: var(--white-color);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .axis-inputs {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .axis-inputs label {
+            font-weight: bold;
+        }
+
+        .axis-inputs input[type="number"] {
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #status-box {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            min-height: 24px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .button, .file-upload-label {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        #btn-home { background-color: var(--secondary-color); color: var(--white-color); }
+        #btn-undo { background-color: var(--warning-color); color: var(--text-color); }
+        #btn-redo { background-color: #fd7e14; color: var(--white-color); }
+        #btn-clear { background-color: var(--danger-color); color: var(--white-color); }
+        #btn-add-set { background-color: var(--primary-color); color: var(--white-color); }
+        #btn-export { background-color: var(--success-color); color: var(--white-color); }
+        #btn-add-hline, #btn-add-vline { background-color: var(--info-color); color: var(--white-color); }
+        
+        .file-upload-label {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: block;
+        }
+        input[type="file"] {
+            display: none;
+        }
+
+        #canvas-container {
+            width: 100%;
+            border: 2px dashed #adb5bd;
+            position: relative;
+            background-color: var(--white-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            cursor: crosshair;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+        #canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        #data-set-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .set-button {
+            background-color: #e9ecef;
+            border: 2px solid #e9ecef;
+            padding: 8px 12px;
+        }
+        .set-button.active {
+            border-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        #data-table-container {
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+        #data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        #data-table th, #data-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+        }
+        #data-table th {
+            background-color: #343a40;
+            color: var(--white-color);
+            position: sticky;
+            top: 0;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <h1>Data Extractor from Graph</h1>
+        
+        <div class="control-panel-container">
+            <div class="control-group">
+                <h3>1. Load Image & Set Axis</h3>
+                <div class="button-group">
+                    <input type="file" id="file-upload" accept="image/*">
+                    <label for="file-upload" class="file-upload-label">Select File</label>
+                </div>
+                 <div class="axis-inputs" style="margin-top: 15px;">
+                    <label for="xmin">X-Min:</label> <input type="number" id="xmin" value="0">
+                    <label for="xmax">X-Max:</label> <input type="number" id="xmax" value="0">
+                    <label for="ymin">Y-Min:</label> <input type="number" id="ymin" value="0">
+                    <label for="ymax">Y-Max:</label> <input type="number" id="ymax" value="0">
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>2. Define Axes & Extract Data</h3>
+                <div class="button-group">
+                     <button id="btn-add-hline" class="button">Add Horizontal Line</button>
+                     <button id="btn-add-vline" class="button">Add Vertical Line</button>
+                     <button id="btn-add-set" class="button">Add Data Set</button>
+                     <button id="btn-export" class="button">Export to TXT</button>
+                     <button id="btn-home" class="button">Home View</button>
+                     <button id="btn-clear" class="button">Clear All</button>
+                     <button id="btn-undo" class="button">Undo</button>
+                     <button id="btn-redo" class="button">Redo</button>
+                </div>
+                 <div id="status-box">Paste an image, or select a file to begin.</div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+            <span>Paste Image Here or Select File</span>
+        </div>
+
+        <div class="control-group">
+            <h3>Extracted Data</h3>
+            <div id="data-set-selector"></div>
+            <div id="data-table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Point #</th>
+                            <th>X Value</th>
+                            <th>Y Value</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusBox = document.getElementById('status-box');
+        const canvasContainer = document.getElementById('canvas-container');
+
+        // --- State Management ---
+        let img = null;
+        let state = 'WAITING_FOR_IMAGE';
+        let axes = { x1: null, y1: null, x2: null, y2: null };
+        let axisValues = {};
+        
+        let dataSets = [{ name: 'Set 1', points: [] }];
+        let activeDataSetIndex = 0;
+        const setColors = ['#00ff00', '#ff00ff', '#00ffff', '#ffa500', '#ff4500', '#da70d6'];
+
+        let history = [];
+        let redoStack = [];
+        
+        // --- Auxiliary Lines State ---
+        let auxiliaryLines = [];
+        let draggingLine = null;
+
+        // --- Panning & Zooming State ---
+        let transform = { x: 0, y: 0, scale: 1 };
+        let isPanning = false;
+        let hasPanned = false;
+        let panStart = { x: 0, y: 0 };
+
+        // --- Input Elements ---
+        const xminInput = document.getElementById('xmin');
+        const xmaxInput = document.getElementById('xmax');
+        const yminInput = document.getElementById('ymin');
+        const ymaxInput = document.getElementById('ymax');
+
+        const updateStatus = (message) => { statusBox.innerHTML = message; };
+
+        const draw = () => {
+            if (!img) return;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(transform.x, transform.y);
+            ctx.scale(transform.scale, transform.scale);
+            ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
+
+            const markerSize = 10 / transform.scale;
+            ctx.lineWidth = 2 / transform.scale;
+            
+            const drawMarker = (point, color) => {
+                if (!point) return;
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(point.x - markerSize, point.y);
+                ctx.lineTo(point.x + markerSize, point.y);
+                ctx.moveTo(point.x, point.y - markerSize);
+                ctx.lineTo(point.x, point.y + markerSize);
+                ctx.stroke();
+            };
+            drawMarker(axes.x1, '#ff0000');
+            drawMarker(axes.x2, '#ff0000');
+            drawMarker(axes.y1, '#0000ff');
+            drawMarker(axes.y2, '#0000ff');
+
+            // Draw auxiliary lines
+            ctx.lineWidth = 1 / transform.scale;
+            ctx.strokeStyle = 'rgba(23, 162, 184, 0.7)'; // info-color
+            ctx.setLineDash([5 / transform.scale, 5 / transform.scale]);
+            auxiliaryLines.forEach(line => {
+                ctx.beginPath();
+                if (line.type === 'h') {
+                    ctx.moveTo(0, line.pos);
+                    ctx.lineTo(img.naturalWidth, line.pos);
+                } else { // 'v'
+                    ctx.moveTo(line.pos, 0);
+                    ctx.lineTo(line.pos, img.naturalHeight);
+                }
+                ctx.stroke();
+            });
+            ctx.setLineDash([]);
+
+            // Draw extracted data points for all sets
+            dataSets.forEach((dataSet, index) => {
+                ctx.fillStyle = setColors[index % setColors.length];
+                dataSet.points.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.canvasPoint.x, p.canvasPoint.y, 5 / transform.scale, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            });
+
+            ctx.restore();
+        };
+        
+        const updateDataSetUI = () => {
+            const selector = document.getElementById('data-set-selector');
+            selector.innerHTML = '';
+            dataSets.forEach((set, index) => {
+                const button = document.createElement('button');
+                button.textContent = set.name;
+                button.className = 'button set-button';
+                if (index === activeDataSetIndex) button.classList.add('active');
+                button.onclick = () => {
+                    activeDataSetIndex = index;
+                    updateDataSetUI();
+                    updateDataTable();
+                };
+                selector.appendChild(button);
+            });
+        };
+
+        const updateDataTable = () => {
+            const tbody = document.querySelector("#data-table tbody");
+            tbody.innerHTML = "";
+            if (!dataSets[activeDataSetIndex]) return;
+
+            dataSets[activeDataSetIndex].points.forEach((p, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${p.dataPoint.x.toFixed(4)}</td>
+                    <td>${p.dataPoint.y.toFixed(4)}</td>
+                `;
+            });
+        };
+
+        const loadImage = (src) => {
+            img = new Image();
+            img.onload = () => {
+                canvas.style.height = `${canvas.clientWidth * (img.naturalHeight / img.naturalWidth)}px`;
+                img.width = img.naturalWidth;
+                img.height = img.naturalHeight;
+                canvasContainer.querySelector('span').style.display = 'none';
+                resetForNewImage();
+                draw();
+            };
+            img.src = src;
+        };
+        
+        const resetForNewImage = () => {
+            state = 'SET_X1';
+            transform = { x: 0, y: 0, scale: 1 };
+            axes = { x1: null, y1: null, x2: null, y2: null };
+            dataSets = [{ name: 'Set 1', points: [] }];
+            activeDataSetIndex = 0;
+            history = [];
+            redoStack = [];
+            auxiliaryLines = [];
+            updateStatus('Image loaded. Click on the start of the X-axis.');
+            updateDataSetUI();
+            updateDataTable();
+        };
+
+        const getCanvasCoords = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - transform.x) / transform.scale;
+            const y = (e.clientY - rect.top - transform.y) / transform.scale;
+            return { x, y };
+        };
+
+        const convertToDataCoords = (canvasPoint) => {
+            // X-axis calculation
+            const x_pixel_range = axes.x2.x - axes.x1.x;
+            const x_data_range = axisValues.xmax - axisValues.xmin;
+            const x_ratio = (canvasPoint.x - axes.x1.x) / x_pixel_range;
+            const x_val = axisValues.xmin + x_ratio * x_data_range;
+
+            // ***** Y-AXIS BUG FIX *****
+            // The key is to create a ratio that is 0 at the y-min pixel and 1 at the y-max pixel,
+            // regardless of which one was clicked first (i.e., regardless of which one is higher on the screen).
+            const y_data_range = axisValues.ymax - axisValues.ymin;
+            const y_pixel_range = axes.y1.y - axes.y2.y; // This can be negative, which is correct.
+            
+            // This ratio correctly maps the inverted canvas y-coordinate to the data coordinate.
+            // If canvasPoint.y is at the ymin pixel (axes.y1.y), ratio is 0.
+            // If canvasPoint.y is at the ymax pixel (axes.y2.y), ratio is 1.
+            const y_ratio = (axes.y1.y - canvasPoint.y) / y_pixel_range;
+            const y_val = axisValues.ymin + y_ratio * y_data_range;
+
+            return { x: x_val, y: y_val };
+        };
+
+        const addDataPoint = (canvasPoint) => {
+            const dataPoint = convertToDataCoords(canvasPoint);
+            const pointData = { canvasPoint, dataPoint };
+            
+            dataSets[activeDataSetIndex].points.push(pointData);
+            history.push({ action: 'add', data: pointData, setIndex: activeDataSetIndex });
+            redoStack = [];
+            
+            updateDataTable();
+        };
+        
+        // --- Event Listeners ---
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => loadImage(event.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        window.addEventListener('paste', e => {
+            const items = (e.clipboardData || window.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => loadImage(event.target.result);
+                    reader.readAsDataURL(blob);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousedown', e => {
+            if (e.button !== 0) return; // Only process left-clicks
+            const mousePos = getCanvasCoords(e);
+            
+            // Check for auxiliary line drag
+            const clickTolerance = 5 / transform.scale;
+            draggingLine = auxiliaryLines.find(line => {
+                if (line.type === 'h') return Math.abs(line.pos - mousePos.y) < clickTolerance;
+                if (line.type === 'v') return Math.abs(line.pos - mousePos.x) < clickTolerance;
+                return false;
+            });
+
+            if (draggingLine) {
+                isPanning = false;
+            } else {
+                isPanning = true;
+                hasPanned = false;
+                panStart.x = e.clientX - transform.x;
+                panStart.y = e.clientY - transform.y;
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (draggingLine) {
+                const mousePos = getCanvasCoords(e);
+                if (draggingLine.type === 'h') draggingLine.pos = mousePos.y;
+                else draggingLine.pos = mousePos.x;
+                draw();
+            } else if (isPanning) {
+                hasPanned = true;
+                transform.x = e.clientX - panStart.x;
+                transform.y = e.clientY - panStart.y;
+                draw();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => { 
+            isPanning = false;
+            draggingLine = null;
+        });
+        
+        canvas.addEventListener('mouseleave', () => { 
+            isPanning = false; 
+            draggingLine = null;
+        });
+
+        canvas.addEventListener('wheel', e => {
+            if (!img) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const scaleFactor = 1.1;
+            const zoomDirection = e.deltaY < 0 ? scaleFactor : 1 / scaleFactor;
+
+            transform.x = mouseX - (mouseX - transform.x) * zoomDirection;
+            transform.y = mouseY - (mouseY - transform.y) * zoomDirection;
+            transform.scale *= zoomDirection;
+            draw();
+        });
+
+        canvas.addEventListener('click', e => {
+            if (hasPanned || !img || draggingLine) return;
+            const canvasPoint = getCanvasCoords(e);
+
+            switch (state) {
+                case 'SET_X1':
+                    axes.x1 = canvasPoint;
+                    axisValues.xmin = parseFloat(xminInput.value);
+                    state = 'SET_X2';
+                    updateStatus(`X-start set. Now click on the end of the X-axis.`);
+                    break;
+                case 'SET_X2':
+                    axes.x2 = canvasPoint;
+                    axisValues.xmax = parseFloat(xmaxInput.value);
+                    state = 'SET_Y1';
+                    updateStatus(`X-axis defined. Click on the start of the Y-axis.`);
+                    break;
+                case 'SET_Y1':
+                    axes.y1 = canvasPoint;
+                    axisValues.ymin = parseFloat(yminInput.value);
+                    state = 'SET_Y2';
+                    updateStatus(`Y-start set. Now click on the end of the Y-axis.`);
+                    break;
+                case 'SET_Y2':
+                    axes.y2 = canvasPoint;
+                    axisValues.ymax = parseFloat(ymaxInput.value);
+                    state = 'EXTRACTING_DATA';
+                    updateStatus('Axes set! Click on the graph to extract data points.');
+                    break;
+                case 'EXTRACTING_DATA':
+                    addDataPoint(canvasPoint);
+                    break;
+            }
+            draw();
+        });
+
+        canvas.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (!img) return;
+            const mousePos = getCanvasCoords(e);
+            const clickTolerance = 5 / transform.scale;
+            
+            const lineToRemove = auxiliaryLines.find(line => {
+                if (line.type === 'h') return Math.abs(line.pos - mousePos.y) < clickTolerance;
+                if (line.type === 'v') return Math.abs(line.pos - mousePos.x) < clickTolerance;
+                return false;
+            });
+
+            if (lineToRemove) {
+                auxiliaryLines = auxiliaryLines.filter(line => line.id !== lineToRemove.id);
+                draw();
+            }
+        });
+
+        // --- Button Listeners ---
+        document.getElementById('btn-add-hline').addEventListener('click', () => {
+            if (!img) return;
+            const centerOfView = (-transform.y + canvas.height / 2 / (window.devicePixelRatio || 1)) / transform.scale;
+            auxiliaryLines.push({ type: 'h', pos: centerOfView, id: Date.now() });
+            draw();
+        });
+
+        document.getElementById('btn-add-vline').addEventListener('click', () => {
+            if (!img) return;
+            const centerOfView = (-transform.x + canvas.width / 2 / (window.devicePixelRatio || 1)) / transform.scale;
+            auxiliaryLines.push({ type: 'v', pos: centerOfView, id: Date.now() });
+            draw();
+        });
+
+        document.getElementById('btn-add-set').addEventListener('click', () => {
+            const newSetName = `Set ${dataSets.length + 1}`;
+            dataSets.push({ name: newSetName, points: [] });
+            activeDataSetIndex = dataSets.length - 1;
+            updateDataSetUI();
+            updateDataTable();
+        });
+        
+        document.getElementById('btn-export').addEventListener('click', () => {
+            let content = 'Data Extractor from Graph - Exported Data\n\n';
+            dataSets.forEach(set => {
+                if(set.points.length === 0) return;
+                content += `--- ${set.name} ---\n`;
+                content += 'X-Value\tY-Value\n';
+                set.points.forEach(p => {
+                    content += `${p.dataPoint.x.toFixed(6)}\t${p.dataPoint.y.toFixed(6)}\n`;
+                });
+                content += '\n';
+            });
+            
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'graph_data.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('btn-home').addEventListener('click', () => {
+            if (!img) return;
+            transform = { x: 0, y: 0, scale: 1 };
+            draw();
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all data, axes, and lines?')) {
+                resetForNewImage();
+                if(img) draw();
+            }
+        });
+
+        document.getElementById('btn-undo').addEventListener('click', () => {
+            if (history.length > 0) {
+                const lastAction = history.pop();
+                if (lastAction.action === 'add') {
+                    dataSets[lastAction.setIndex].points.pop();
+                    redoStack.push(lastAction);
+                }
+                updateDataTable();
+                draw();
+            }
+        });
+
+        document.getElementById('btn-redo').addEventListener('click', () => {
+            if (redoStack.length > 0) {
+                const actionToRedo = redoStack.pop();
+                if (actionToRedo.action === 'add') {
+                    dataSets[actionToRedo.setIndex].points.push(actionToRedo.data);
+                    history.push(actionToRedo);
+                }
+                updateDataTable();
+                draw();
+            }
+        });
+        
+        // Initial setup
+        updateDataSetUI();
+    });
+    </script>
+</body>
+</html>

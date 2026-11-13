@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date Calculator Tools</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #2d3748;
+            line-height: 1.6;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .calculator-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .calculator-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-size: 1.1em;
+            color: #4a5568;
+            margin-bottom: 12px;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .date-input-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .date-input-labels {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .date-input-labels span {
+            font-size: 0.85em;
+            color: #718096;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .date-input-container input {
+            padding: 8px 6px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .date-input-container input:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        .date-input-container input.error {
+            border-color: #e53e3e;
+            background-color: #fed7d7;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            background-color: white;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        input[type="number"]:not(.date-input-container input) {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:not(.date-input-container input):focus {
+            outline: none;
+            border-color: #4a5568;
+        }
+
+        .btn {
+            background-color: #4a5568;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            background-color: #2d3748;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f7fafc;
+            border-radius: 5px;
+            border-left: 3px solid #4a5568;
+            font-weight: 500;
+            min-height: 35px;
+            font-size: 0.85em;
+            line-height: 1.3;
+        }
+
+        .result.highlight {
+            background-color: #e6fffa;
+            border-left-color: #38b2ac;
+        }
+
+        .result.error {
+            background-color: #fed7d7;
+            border-left-color: #e53e3e;
+            color: #c53030;
+        }
+
+        .operation-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .today-btn {
+            background-color: #718096;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 4px;
+            width: 100%;
+        }
+
+        .today-btn:hover {
+            background-color: #4a5568;
+        }
+
+        .info-text {
+            font-size: 0.85em;
+            color: #718096;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 6px;
+            transform: scale(1.1);
+        }
+
+        .checkbox-container label {
+            margin: 0;
+            font-size: 0.8em;
+            color: #4a5568;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #e53e3e;
+            font-size: 0.85em;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            h1 {
+                font-size: 1.4em;
+                margin-bottom: 12px;
+            }
+            
+            .calculator-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .calculator-card {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .card-title {
+                font-size: 1em;
+                margin-bottom: 10px;
+            }
+            
+            .operation-group {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            
+            .date-input-container {
+                gap: 4px;
+            }
+            
+            .date-input-labels {
+                gap: 4px;
+            }
+            
+            .date-input-container input {
+                padding: 6px 4px;
+                font-size: 13px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .result {
+                padding: 8px;
+                font-size: 0.8em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .date-input-container {
+                grid-template-columns: 1.8fr 1fr 1fr;
+                gap: 3px;
+            }
+            
+            .date-input-labels {
+                grid-template-columns: 1.8fr 1fr 1fr;
+                gap: 3px;
+            }
+            
+            .date-input-container input {
+                padding: 6px 3px;
+                font-size: 12px;
+            }
+            
+            .date-input-labels span {
+                font-size: 0.75em;
+            }
+            
+            .checkbox-container label {
+                font-size: 0.75em;
+            }
+        }
+
+        /* Google Sites compatibility */
+        .date-calculator-widget {
+            width: 100%;
+            height: auto;
+            overflow: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="date-calculator-widget">
+        <div class="container">
+            <h1>Date Calculator Tools</h1>
+            
+            <div class="calculator-grid">
+                <!-- Date Difference Calculator -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Date Difference Calculator</h2>
+                    <div class="form-group">
+                        <label>Start Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="start-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="start-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="start-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="start-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('start')">Today</button>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="end-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="end-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="end-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="end-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('end')">Today</button>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-diff" checked>
+                        <label for="include-end-diff">Include end date in calculation</label>
+                    </div>
+                    <button class="btn" onclick="calculateDifference()">Calculate Difference</button>
+                    <div id="difference-result" class="result"></div>
+                </div>
+
+                <!-- Add/Subtract Days -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Add/Subtract Days</h2>
+                    <div class="form-group">
+                        <label>Base Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="base-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="base-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="base-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="base-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('base')">Today</button>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-add" checked>
+                        <label for="include-end-add">Include end date in calculation</label>
+                    </div>
+                    <div class="operation-group">
+                        <div class="form-group">
+                            <label for="days-number">Days:</label>
+                            <input type="number" id="days-number" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="operation">Operation:</label>
+                            <select id="operation">
+                                <option value="add">Add Days</option>
+                                <option value="subtract">Subtract Days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="calculateAddSubtract()">Calculate</button>
+                    <div id="add-subtract-result" class="result"></div>
+                </div>
+
+                <!-- Day of Week Calculator -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Day of Week Calculator</h2>
+                    <div class="form-group">
+                        <label>Select Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="day-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="day-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="day-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="day-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('day')">Today</button>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-dayofweek" checked>
+                        <label for="include-end-dayofweek">Include end date in calculation</label>
+                    </div>
+                    <button class="btn" onclick="calculateDayOfWeek()">Find Day of Week</button>
+                    <div id="day-result" class="result"></div>
+                </div>
+
+                <!-- Age Calculator -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Age Calculator</h2>
+                    <div class="form-group">
+                        <label>Birth Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="birth-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="birth-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="birth-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="birth-error" class="error-message"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Calculate Age As Of:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="age-calc-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="age-calc-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="age-calc-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="age-calc-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('age-calc')">Today</button>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-age" checked>
+                        <label for="include-end-age">Include end date in calculation</label>
+                    </div>
+                    <button class="btn" onclick="calculateAge()">Calculate Age</button>
+                    <div id="age-result" class="result"></div>
+                </div>
+
+                <!-- Working Days Calculator -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Working Days Calculator</h2>
+                    <div class="form-group">
+                        <label>Start Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="work-start-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="work-start-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="work-start-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="work-start-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('work-start')">Today</button>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="work-end-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="work-end-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="work-end-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="work-end-error" class="error-message"></div>
+                        <button class="today-btn" onclick="setTodayCustom('work-end')">Today</button>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-work" checked>
+                        <label for="include-end-work">Include end date in calculation</label>
+                    </div>
+                    <button class="btn" onclick="calculateWorkingDays()">Calculate Working Days</button>
+                    <div id="working-days-result" class="result"></div>
+                    <div class="info-text">* Excludes weekends (Saturday & Sunday)</div>
+                </div>
+
+                <!-- Days Until/Since Calculator -->
+                <div class="calculator-card">
+                    <h2 class="card-title">Days Until/Since Calculator</h2>
+                    <div class="form-group">
+                        <label>Target Date:</label>
+                        <div class="date-input-labels">
+                            <span>Year</span>
+                            <span>Month</span>
+                            <span>Day</span>
+                        </div>
+                        <div class="date-input-container">
+                            <input type="number" id="target-year" placeholder="YYYY" min="0" max="10000">
+                            <input type="number" id="target-month" placeholder="MM" min="1" max="12">
+                            <input type="number" id="target-day" placeholder="DD" min="1" max="31">
+                        </div>
+                        <div id="target-error" class="error-message"></div>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="include-end-until" checked>
+                        <label for="include-end-until">Include end date in calculation</label>
+                    </div>
+                    <button class="btn" onclick="calculateDaysUntil()">Calculate</button>
+                    <div id="days-until-result" class="result"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Clear all error messages
+        function clearErrors() {
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(el => el.textContent = '');
+            
+            const inputElements = document.querySelectorAll('.date-input-container input');
+            inputElements.forEach(el => el.classList.remove('error'));
+        }
+
+        // Show error message
+        function showError(prefix, message) {
+            const errorElement = document.getElementById(prefix + '-error');
+            if (errorElement) {
+                errorElement.textContent = message;
+            }
+            
+            // Add error class to inputs
+            const yearInput = document.getElementById(prefix + '-year');
+            const monthInput = document.getElementById(prefix + '-month');
+            const dayInput = document.getElementById(prefix + '-day');
+            
+            if (yearInput) yearInput.classList.add('error');
+            if (monthInput) monthInput.classList.add('error');
+            if (dayInput) dayInput.classList.add('error');
+        }
+
+        // Set today's date for custom date inputs
+        function setTodayCustom(prefix) {
+            clearErrors();
+            const today = new Date();
+            document.getElementById(prefix + '-year').value = today.getFullYear();
+            document.getElementById(prefix + '-month').value = today.getMonth() + 1;
+            document.getElementById(prefix + '-day').value = today.getDate();
+        }
+
+        // Get date from custom inputs
+        function getDateFromInputs(prefix) {
+            const year = parseInt(document.getElementById(prefix + '-year').value);
+            const month = parseInt(document.getElementById(prefix + '-month').value);
+            const day = parseInt(document.getElementById(prefix + '-day').value);
+            
+            if (!year || !month || !day) {
+                return null;
+            }
+            
+            return new Date(year, month - 1, day);
+        }
+
+        // Enhanced date validation with specific error messages
+        function validateDate(prefix) {
+            const year = parseInt(document.getElementById(prefix + '-year').value);
+            const month = parseInt(document.getElementById(prefix + '-month').value);
+            const day = parseInt(document.getElementById(prefix + '-day').value);
+            
+            // Check if all fields are filled
+            if (!year || !month || !day) {
+                showError(prefix, 'Please fill in all date fields');
+                return false;
+            }
+            
+            // Check year range
+            if (year < 0 || year > 10000) {
+                showError(prefix, 'Year must be between 0 and 10000');
+                return false;
+            }
+            
+            // Check month range
+            if (month < 1 || month > 12) {
+                showError(prefix, 'Month must be between 1 and 12');
+                return false;
+            }
+            
+            // Check day range
+            if (day < 1 || day > 31) {
+                showError(prefix, 'Day must be between 1 and 31');
+                return false;
+            }
+            
+            // Check if date actually exists (handles February 30, etc.)
+            const testDate = new Date(year, month - 1, day);
+            if (testDate.getFullYear() !== year || testDate.getMonth() !== month - 1 || testDate.getDate() !== day) {
+                showError(prefix, 'This date does not exist (e.g., February 30th)');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Initialize with today's date
+        window.onload = function() {
+            setTodayCustom('end');
+            setTodayCustom('base');
+            setTodayCustom('day');
+            setTodayCustom('age-calc');
+            setTodayCustom('work-end');
+        }
+
+        // Calculate difference between two dates
+        function calculateDifference() {
+            clearErrors();
+            
+            if (!validateDate('start') || !validateDate('end')) {
+                document.getElementById('difference-result').innerHTML = 'Please correct the date errors above.';
+                document.getElementById('difference-result').className = 'result error';
+                return;
+            }
+
+            const startDate = getDateFromInputs('start');
+            const endDate = getDateFromInputs('end');
+            const includeEndDate = document.getElementById('include-end-diff').checked;
+            
+            const timeDiff = endDate - startDate;
+            let daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            
+            // Add 1 if including end date and dates are different
+            if (includeEndDate && daysDiff !== 0) {
+                daysDiff = daysDiff >= 0 ? daysDiff + 1 : daysDiff - 1;
+            }
+            
+            const years = Math.floor(Math.abs(daysDiff) / 365);
+            const months = Math.floor((Math.abs(daysDiff) % 365) / 30);
+            const days = Math.abs(daysDiff) % 30;
+
+            let result = `<strong>Total Days:</strong> ${Math.abs(daysDiff)} days<br>`;
+            result += `<strong>Breakdown:</strong> ${years} years, ${months} months, ${days} days<br>`;
+            result += `<strong>Total Weeks:</strong> ${Math.floor(Math.abs(daysDiff) / 7)} weeks<br>`;
+            result += `<strong>Total Hours:</strong> ${Math.abs(daysDiff) * 24} hours<br>`;
+            result += `<strong>End Date:</strong> ${includeEndDate ? 'Included' : 'Excluded'}<br>`;
+            
+            if (daysDiff > 0) {
+                result += `<strong>Direction:</strong> End date is ${Math.abs(daysDiff)} days after start date`;
+            } else if (daysDiff < 0) {
+                result += `<strong>Direction:</strong> End date is ${Math.abs(daysDiff)} days before start date`;
+            } else {
+                result += `<strong>Direction:</strong> Both dates are the same`;
+            }
+
+            document.getElementById('difference-result').innerHTML = result;
+            document.getElementById('difference-result').className = 'result highlight';
+        }
+
+        // Add or subtract days from a date
+        function calculateAddSubtract() {
+            clearErrors();
+            
+            if (!validateDate('base')) {
+                document.getElementById('add-subtract-result').innerHTML = 'Please correct the date errors above.';
+                document.getElementById('add-subtract-result').className = 'result error';
+                return;
+            }
+
+            const baseDate = getDateFromInputs('base');
+            const daysToAdd = parseInt(document.getElementById('days-number').value);
+            const operation = document.getElementById('operation').value;
+            const includeEndDate = document.getElementById('include-end-add').checked;
+
+            const resultDate = new Date(baseDate);
+            let adjustedDays = daysToAdd;
+            
+            // Adjust for end date inclusion
+            if (includeEndDate && daysToAdd > 0) {
+                adjustedDays = operation === 'add' ? daysToAdd - 1 : daysToAdd + 1;
+            }
+            
+            if (operation === 'add') {
+                resultDate.setDate(resultDate.getDate() + adjustedDays);
+            } else {
+                resultDate.setDate(resultDate.getDate() - adjustedDays);
+            }
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedTarget = targetDate.toLocaleDateString('en-US', options);
+
+            let result = `<strong>Target Date:</strong> ${formattedTarget}<br>`;
+            result += `<strong>End Date:</strong> ${includeEndDate ? 'Included' : 'Excluded'}<br>`;
+            
+            if (daysDiff > 0) {
+                result += `<strong>Days Until:</strong> ${daysDiff} days<br>`;
+                result += `<strong>Status:</strong> ${daysDiff} days in the future<br>`;
+                result += `<strong>Weeks Until:</strong> ${Math.floor(daysDiff / 7)} weeks, ${daysDiff % 7} days`;
+            } else if (daysDiff < 0) {
+                result += `<strong>Days Since:</strong> ${Math.abs(daysDiff)} days<br>`;
+                result += `<strong>Status:</strong> ${Math.abs(daysDiff)} days in the past<br>`;
+                result += `<strong>Weeks Since:</strong> ${Math.floor(Math.abs(daysDiff) / 7)} weeks, ${Math.abs(daysDiff) % 7} days`;
+            } else {
+                result += `<strong>Status:</strong> Today!<br>`;
+                result += `<strong>Days:</strong> 0 days difference`;
+            }
+
+            document.getElementById('days-until-result').innerHTML = result;
+            document.getElementById('days-until-result').className = 'result highlight';
+        }
+    </script>
+</body>

@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse fluence and peak power calculator</title>
+</head>
+<body>
+<!-- Google Sites용 펄스 레이저 계산기 (모바일 반응형) -->
+<div id="pulse-calculator-container">
+  <style>
+    #pulse-calculator-container {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    #pulse-calculator-container * {
+      box-sizing: border-box;
+    }
+    
+    .calc-title {
+      font-size: clamp(18px, 4vw, 24px);
+      margin-bottom: 25px;
+      text-align: center;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .row-container {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+    
+    @media (min-width: 1024px) {
+      .row-container {
+        flex-direction: row;
+        gap: 30px;
+      }
+    }
+
+    .table-box {
+      flex: 1;
+      min-width: 300px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .calc-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .calc-table th {
+      background-color: #afafaf;
+      color: black;
+      padding: 15px 12px;
+      font-size: clamp(14px, 2.5vw, 16px);
+      font-weight: 600;
+      text-align: center;
+      border: none;
+    }
+
+    .calc-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    
+    @media (max-width: 767px) {
+      .calc-table td {
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+    }
+
+    .calc-table td:first-child {
+      background-color: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+      width: 25%;
+      min-width: 80px;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
+    
+    @media (max-width: 767px) {
+      .calc-table td:first-child {
+        width: 30%;
+        font-size: 11px;
+      }
+    }
+
+    .input-cell {
+      position: relative;
+      width: 25%;
+      min-width: 60px;
+    }
+    
+    /* Peak Power Density 행의 5개 셀을 위한 특별 스타일 */
+    .density-row .input-cell {
+      width: 20%;
+      min-width: 70px;
+    }
+    
+    @media (max-width: 767px) {
+      .input-cell {
+        width: 23.33%;
+        min-width: 50px;
+      }
+      
+      .density-row .input-cell {
+        width: 17.5%;
+        min-width: 55px;
+      }
+    }
+
+    .calc-input {
+      width: 100%;
+      padding: 8px 6px;
+      font-size: 14px;
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      background-color: #fff;
+    }
+    
+    @media (max-width: 767px) {
+      .calc-input {
+        padding: 6px 4px;
+        font-size: 12px;
+      }
+    }
+
+    .calc-input:focus {
+      outline: none;
+      border-color: #afafaf;
+      box-shadow: 0 0 0 3px rgba(175, 175, 175, 0.1);
+    }
+
+    .calc-input:read-only {
+      background-color: #f5f5f5;
+      border-color: #ddd;
+      color: #555;
+      cursor: default;
+    }
+
+    .unit-label {
+      display: block;
+      margin-top: 2px;
+      color: #6c757d;
+      font-size: 11px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    @media (max-width: 767px) {
+      .unit-label {
+        font-size: 9px;
+      }
+    }
+
+    /* 특별한 셀 스타일링 */
+    .fluence-cell {
+      text-align: center;
+      background-color: #f0f0f0;
+      font-weight: 600;
+      color: #555;
+    }
+    
+    .density-header {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    
+    @media (max-width: 767px) {
+      .density-header {
+        font-size: 10px;
+      }
+    }
+
+    /* 호버 효과 */
+    .calc-table tr:hover td {
+      background-color: #f5f5f5;
+    }
+    
+    .calc-table tr:hover td:first-child {
+      background-color: #e9ecef;
+    }
+
+    /* 반응형 테이블 */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    @media (max-width: 767px) {
+      .table-scroll {
+        margin: 0 -10px;
+        padding: 0 10px;
+      }
+    }
+
+    /* 모바일에서 터치 친화적 */
+    @media (hover: none) and (pointer: coarse) {
+      .calc-input {
+        padding: 10px 8px;
+        font-size: 16px; /* iOS 줌 방지 */
+        border-radius: 8px;
+      }
+      
+      .calc-table td {
+        padding: 15px 8px;
+      }
+    }
+
+    /* 작은 화면에서 표 레이아웃 조정 */
+    @media (max-width: 480px) {
+      #pulse-calculator-container {
+        padding: 15px 10px;
+      }
+      
+      .table-box {
+        border-radius: 8px;
+      }
+      
+      .calc-table th {
+        padding: 12px 8px;
+      }
+    }
+
+    /* 프린트 스타일 */
+    @media print {
+      #pulse-calculator-container {
+        background-color: white;
+        box-shadow: none;
+      }
+      
+      .table-box {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+
+  <h1 class="calc-title">Pulse Fluence & Peak Power Calculator</h1>
+  
+  <div class="row-container">
+    <!-- Input Parameters Table -->
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="calc-table">
+          <tr>
+            <th colspan="4">Input Parameters</th>
+          </tr>
+          <tr>
+            <td>Average Power</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="uW" step="any" placeholder="0">
+              <span class="unit-label">[µW]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="mW" step="any" placeholder="0">
+              <span class="unit-label">[mW]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="W" step="any" placeholder="0">
+              <span class="unit-label">[W]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Beam Waist</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="um" step="any" placeholder="0">
+              <span class="unit-label">[µm]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="mm" step="any" placeholder="0">
+              <span class="unit-label">[mm]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="cm" step="any" placeholder="0">
+              <span class="unit-label">[cm]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Pulse Duration</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="fs" step="any" placeholder="0">
+              <span class="unit-label">[fs]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="ps" step="any" placeholder="0">
+              <span class="unit-label">[ps]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="ns" step="any" placeholder="0">
+              <span class="unit-label">[ns]</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Repetition Rate</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="kHz" step="any" placeholder="0">
+              <span class="unit-label">[kHz]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="MHz" step="any" placeholder="0">
+              <span class="unit-label">[MHz]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="GHz" step="any" placeholder="0">
+              <span class="unit-label">[GHz]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Output Parameters Table -->
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="calc-table">
+          <tr>
+            <th colspan="5">Output Parameters</th>
+          </tr>
+          <tr>
+            <td>Pulse Energy</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="pJ" readonly>
+              <span class="unit-label">[pJ]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="nJ" readonly>
+              <span class="unit-label">[nJ]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="uJ" readonly>
+              <span class="unit-label">[µJ]</span>
+            </td>
+            <td class="input-cell" style="background-color: transparent;"></td>
+          </tr>
+          <tr>
+            <td>Peak Power</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="W_pp" readonly>
+              <span class="unit-label">[W]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="kW_pp" readonly>
+              <span class="unit-label">[kW]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="MW_pp" readonly>
+              <span class="unit-label">[MW]</span>
+            </td>
+            <td class="input-cell" style="background-color: transparent;"></td>
+          </tr>
+          <tr>
+            <td>Fluence</td>
+            <td class="input-cell fluence-cell">
+              <div style="font-size: 10px; margin-bottom: 2px;">Top-hat</div>
+              <input type="number" class="calc-input" id="FT" readonly>
+              <span class="unit-label">[µJ/cm²]</span>
+            </td>
+            <td class="input-cell fluence-cell">
+              <div style="font-size: 10px; margin-bottom: 2px;">Gaussian</div>
+              <input type="number" class="calc-input" id="FG" readonly>
+              <span class="unit-label">[µJ/cm²]</span>
+            </td>
+            <td class="input-cell" style="background-color: transparent;"></td>
+            <td class="input-cell" style="background-color: transparent;"></td>
+          </tr>
+          <tr class="density-row">
+            <td class="density-header">Peak Power Density<br>(Top-hat)</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="kW_T" readonly>
+              <span class="unit-label">[kW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="MW_T" readonly>
+              <span class="unit-label">[MW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="GW_T" readonly>
+              <span class="unit-label">[GW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="TW_T" readonly>
+              <span class="unit-label">[TW/cm²]</span>
+            </td>
+          </tr>
+          <tr class="density-row">
+            <td class="density-header">Peak Power Density<br>(Gaussian)</td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="kW_G" readonly>
+              <span class="unit-label">[kW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="MW_G" readonly>
+              <span class="unit-label">[MW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="GW_G" readonly>
+              <span class="unit-label">[GW/cm²]</span>
+            </td>
+            <td class="input-cell">
+              <input type="number" class="calc-input" id="TW_G" readonly>
+              <span class="unit-label">[TW/cm²]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const CalcNamespace = 'PulseCalc_' + Date.now();
+  
+  class PulseCalculator {
+    constructor() {
+      this.initializeElements();
+      this.setupEventListeners();
+    }
+    
+    initializeElements() {
+      // Input elements
+      this.uW = document.getElementById("uW");
+      this.mW = document.getElementById("mW");
+      this.W = document.getElementById("W");
+      
+      this.um = document.getElementById("um");
+      this.mm = document.getElementById("mm");
+      this.cm = document.getElementById("cm");
+      
+      this.fs = document.getElementById("fs");
+      this.ps = document.getElementById("ps");
+      this.ns = document.getElementById("ns");
+      
+      this.kHz = document.getElementById("kHz");
+      this.MHz = document.getElementById("MHz");
+      this.GHz = document.getElementById("GHz");
+      
+      // Output elements
+      this.pJ = document.getElementById("pJ");
+      this.nJ = document.getElementById("nJ");
+      this.uJ = document.getElementById("uJ");
+      
+      this.W_pp = document.getElementById("W_pp");
+      this.kW_pp = document.getElementById("kW_pp");
+      this.MW_pp = document.getElementById("MW_pp");
+      
+      this.FT = document.getElementById("FT");
+      this.FG = document.getElementById("FG");
+      
+      this.kW_T = document.getElementById("kW_T");
+      this.MW_T = document.getElementById("MW_T");
+      this.GW_T = document.getElementById("GW_T");
+      this.TW_T = document.getElementById("TW_T");
+      
+      this.kW_G = document.getElementById("kW_G");
+      this.MW_G = document.getElementById("MW_G");
+      this.GW_G = document.getElementById("GW_G");
+      this.TW_G = document.getElementById("TW_G");
+    }
+    
+    setupEventListeners() {
+      // Unit synchronization setup
+      this.syncUnits(this.uW, [this.mW, this.W], [1e-3, 1e-6]);
+      this.syncUnits(this.mW, [this.uW, this.W], [1e3, 1e-3]);
+      this.syncUnits(this.W, [this.uW, this.mW], [1e6, 1e3]);
+
+      this.syncUnits(this.um, [this.mm, this.cm], [1e-3, 1e-4]);
+      this.syncUnits(this.mm, [this.um, this.cm], [1e3, 1e-1]);
+      this.syncUnits(this.cm, [this.um, this.mm], [1e4, 10]);
+
+      this.syncUnits(this.fs, [this.ps, this.ns], [1e-3, 1e-6]);
+      this.syncUnits(this.ps, [this.fs, this.ns], [1e3, 1e-3]);
+      this.syncUnits(this.ns, [this.fs, this.ps], [1e6, 1e3]);
+
+      this.syncUnits(this.kHz, [this.MHz, this.GHz], [1e-3, 1e-6]);
+      this.syncUnits(this.MHz, [this.kHz, this.GHz], [1e3, 1e-3]);
+      this.syncUnits(this.GHz, [this.kHz, this.MHz], [1e6, 1e3]);
+    }
+    
+    syncUnits(base, others, factors) {
+      base.addEventListener("input", () => {
+        if (document.activeElement !== base) return;
+        
+        const val = parseFloat(base.value);
+        if (isNaN(val)) {
+          others.forEach(el => el.value = "");
+          this.calculate();
+          return;
+        }
+        
+        others.forEach((el, i) => {
+          const result = val * factors[i];
+          el.value = this.formatNumber(result);
+        });
+        
+        this.calculate();
+      });
+    }
+    
+    formatNumber(num) {
+      if (Math.abs(num) < 1e-10) return "0";
+      if (Math.abs(num) >= 1e6 || Math.abs(num) < 1e-3) {
+        return num.toExponential(6);
+      }
+      return num.toFixed(6).replace(/\.?0+$/, "");
+    }
+    
+    calculate() {
+      const Pavg = parseFloat(this.W.value);
+      const waist = parseFloat(this.cm.value) * 0.01; // Convert cm to m
+      const tau = parseFloat(this.fs.value) * 1e-15; // Convert fs to s
+      const RR = parseFloat(this.MHz.value) * 1e6; // Convert MHz to Hz
+      
+      // Check if all required values are valid
+      if ([Pavg, waist, tau, RR].some(v => isNaN(v) || v <= 0)) {
+        this.clearOutputs();
+        return;
+      }
+
+      // Calculate pulse energy
+      const energy = Pavg / RR;
+      
+      // Calculate peak power
+      const pp = energy / tau;
+      
+      // Calculate fluence
+      const fluence_T = energy / (Math.PI * waist ** 2) * 1e-4; // Convert to µJ/cm²
+      const fluence_G = energy / (Math.PI * (waist / Math.sqrt(2)) ** 2) * 1e-4; // Convert to µJ/cm²
+      
+      // Calculate peak power density
+      const pp_T = fluence_T / tau; // W/cm²
+      const pp_G = fluence_G / tau; // W/cm²
+
+      // Set pulse energy outputs
+      this.pJ.value = (energy * 1e12).toFixed(4);
+      this.nJ.value = (energy * 1e9).toFixed(4);
+      this.uJ.value = (energy * 1e6).toFixed(4);
+
+      // Set peak power outputs
+      this.W_pp.value = pp.toFixed(2);
+      this.kW_pp.value = (pp * 1e-3).toFixed(2);
+      this.MW_pp.value = (pp * 1e-6).toFixed(4);
+
+      // Set fluence outputs
+      this.FT.value = (fluence_T * 1e6).toFixed(2);
+      this.FG.value = (fluence_G * 1e6).toFixed(2);
+
+      // Set peak power density outputs (Top-hat)
+      this.kW_T.value = (pp_T * 1e-3).toFixed(2);
+      this.MW_T.value = (pp_T * 1e-6).toFixed(2);
+      this.GW_T.value = (pp_T * 1e-9).toFixed(2);
+      this.TW_T.value = (pp_T * 1e-12).toFixed(2);
+
+      // Set peak power density outputs (Gaussian)
+      this.kW_G.value = (pp_G * 1e-3).toFixed(2);
+      this.MW_G.value = (pp_G * 1e-6).toFixed(2);
+      this.GW_G.value = (pp_G * 1e-9).toFixed(2);
+      this.TW_G.value = (pp_G * 1e-12).toFixed(2);
+    }
+    
+    clearOutputs() {
+      const outputs = [
+        this.pJ, this.nJ, this.uJ,
+        this.W_pp, this.kW_pp, this.MW_pp,
+        this.FT, this.FG,
+        this.kW_T, this.MW_T, this.GW_T, this.TW_T,
+        this.kW_G, this.MW_G, this.GW_G, this.TW_G
+      ];
+      
+      outputs.forEach(output => output.value = "");
+    }
+  }
+
+  // DOM이 준비되면 계산기 초기화
+  function initializeCalculator() {
+    window[CalcNamespace] = new PulseCalculator();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCalculator);
+  } else {
+    initializeCalculator();
+  }
+})();
+</script>
+</body>
+</html>

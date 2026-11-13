@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresnel reflectance calculator</title>
+</head>
+<body>
+<!-- Google Sites용 Fresnel 반사율 계산기 (모바일 반응형) -->
+
+<div id="fresnel-calculator-container">
+  <style>
+    #fresnel-calculator-container {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    #fresnel-calculator-container * {
+      box-sizing: border-box;
+    }
+    
+    .calc-title {
+      font-size: clamp(18px, 4vw, 24px);
+      margin-bottom: 25px;
+      text-align: center;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .input-section {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 767px) {
+      .input-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+    }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .input-label {
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .calc-input {
+      padding: 12px;
+      font-size: 14px;
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      background-color: #fff;
+    }
+    
+    @media (max-width: 767px) {
+      .calc-input {
+        padding: 10px;
+        font-size: 16px; /* iOS 줌 방지 */
+      }
+    }
+    
+    .calc-input:focus {
+      outline: none;
+      border-color: #afafaf;
+      box-shadow: 0 0 0 3px rgba(175, 175, 175, 0.1);
+    }
+    
+    .results-section {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    
+    @media (max-width: 767px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+    }
+    
+    .result-item {
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      border-left: 4px solid #afafaf;
+    }
+    
+    .result-label {
+      font-weight: 600;
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    
+    .result-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+    }
+    
+    .graph-section {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .graph-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .graph-container {
+      width: 100%;
+      height: 400px;
+      min-height: 300px;
+    }
+    
+    @media (max-width: 767px) {
+      .graph-container {
+        height: 350px;
+        min-height: 250px;
+      }
+    }
+    
+    .warning-text {
+      color: #666;
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+      font-style: italic;
+    }
+    
+    /* Theory Section */
+    .theory-section {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+    
+    .theory-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+      border-bottom: 2px solid #afafaf;
+      padding-bottom: 10px;
+    }
+    
+    .theory-content {
+      color: #555;
+      line-height: 1.6;
+    }
+    
+    .theory-subsection {
+      margin-bottom: 20px;
+    }
+    
+    .theory-subsection h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 10px;
+      border-left: 4px solid #afafaf;
+      padding-left: 10px;
+    }
+    
+    .equation {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    @media (max-width: 767px) {
+      .equation {
+        font-size: 12px;
+        padding: 12px;
+      }
+    }
+    
+    .theory-text {
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+    
+    .theory-list {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    
+    .theory-list li {
+      margin-bottom: 8px;
+    }
+    
+    /* 모바일에서 터치 친화적 */
+    @media (hover: none) and (pointer: coarse) {
+      .calc-input {
+        padding: 14px;
+        font-size: 16px;
+        border-radius: 8px;
+      }
+    }
+    
+    /* 작은 화면에서 조정 */
+    @media (max-width: 480px) {
+      #fresnel-calculator-container {
+        padding: 15px 10px;
+      }
+      
+      .input-section, .results-section, .graph-section, .theory-section {
+        padding: 15px;
+        border-radius: 8px;
+      }
+    }
+    
+    /* 프린트 스타일 */
+    @media print {
+      #fresnel-calculator-container {
+        background-color: white;
+        box-shadow: none;
+      }
+      
+      .input-section, .results-section, .graph-section, .theory-section {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+
+  <h1 class="calc-title">Fresnel Reflectance Calculator</h1>
+  
+  <!-- Input Section -->
+  <div class="input-section">
+    <div class="input-grid">
+      <div class="input-group">
+        <label class="input-label">Medium 1 Refractive Index (n₁)</label>
+        <input type="number" class="calc-input" id="n1" step="0.01" value="1.0" placeholder="1.0">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Medium 2 Refractive Index (n₂)</label>
+        <input type="number" class="calc-input" id="n2" step="0.01" value="1.5" placeholder="1.5">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Initial Angle (degrees)</label>
+        <input type="number" class="calc-input" id="startAngle" step="1" value="0" placeholder="0">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Final Angle (degrees)</label>
+        <input type="number" class="calc-input" id="endAngle" step="1" value="90" placeholder="90">
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <div class="results-section">
+    <div class="results-grid">
+      <div class="result-item">
+        <div class="result-label">Brewster Angle (TM)</div>
+        <div class="result-value" id="brewsterAngle">--°</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">Critical Angle</div>
+        <div class="result-value" id="criticalAngle">--°</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Graph Section -->
+  <div class="graph-section">
+    <div class="graph-title">Reflectance vs Incident Angle</div>
+    <div class="graph-container" id="reflectanceGraph"></div>
+    <div class="warning-text">
+      TE: s-polarization, TM: p-polarization | Total internal reflection occurs when reflectance = 1.0
+    </div>
+  </div>
+
+  <!-- Theory Section -->
+  <div class="theory-section">
+    <div class="theory-title">Physical Principles & Mathematical Formulation</div>
+    <div class="theory-content">
+      
+      <div class="theory-subsection">
+        <h3>Fresnel Equations</h3>
+        <div class="theory-text">
+          The reflectance at the interface between two dielectric media is governed by the Fresnel equations, which depend on the polarization of incident light.
+        </div>
+        
+        <div class="equation">
+          <strong>TE Polarization (s-polarization):</strong><br>
+          R<sub>TE</sub> = |r<sub>s</sub>|² = |(n₁cosθ₁ - n₂cosθ₂) / (n₁cosθ₁ + n₂cosθ₂)|²
+        </div>
+        
+        <div class="equation">
+          <strong>TM Polarization (p-polarization):</strong><br>
+          R<sub>TM</sub> = |r<sub>p</sub>|² = |(n₂cosθ₁ - n₁cosθ₂) / (n₂cosθ₁ + n₁cosθ₂)|²
+        </div>
+        
+        <div class="theory-text">
+          where θ₁ is the incident angle, θ₂ is the refracted angle, and n₁, n₂ are the refractive indices of the two media.
+        </div>
+      </div>
+
+      <div class="theory-subsection">
+        <h3>Snell's Law</h3>
+        <div class="theory-text">
+          The relationship between incident and refracted angles is described by Snell's law:
+        </div>
+        <div class="equation">
+          n₁ sin θ₁ = n₂ sin θ₂
+        </div>
+      </div>
+
+      <div class="theory-subsection">
+        <h3>Special Angles</h3>
+        
+        <div class="theory-text">
+          <strong>Brewster Angle (θ<sub>B</sub>):</strong> The angle at which TM-polarized light experiences zero reflection.
+        </div>
+        <div class="equation">
+          θ<sub>B</sub> = arctan(n₂/n₁)
+        </div>
+        
+        <div class="theory-text">
+          <strong>Critical Angle (θ<sub>c</sub>):</strong> The angle beyond which total internal reflection occurs (when n₁ > n₂).
+        </div>
+        <div class="equation">
+          θ<sub>c</sub> = arcsin(n₂/n₁)
+        </div>
+      </div>
+
+      <div class="theory-subsection">
+        <h3>Key Physical Phenomena</h3>
+        <ul class="theory-list">
+          <li><strong>Total Internal Reflection:</strong> When θ₁ > θ<sub>c</sub>, all incident light is reflected (R = 1)</li>
+          <li><strong>Brewster Effect:</strong> At θ<sub>B</sub>, TM-polarized light has zero reflectance</li>
+          <li><strong>Polarization Dependence:</strong> TE and TM polarizations exhibit different reflectance behaviors</li>
+          <li><strong>Normal Incidence:</strong> At θ₁ = 0°, R = |(n₁-n₂)/(n₁+n₂)|² for both polarizations</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const CalcNamespace = 'FresnelCalc_' + Date.now();
+  
+  class FresnelCalculator {
+    constructor() {
+      this.initializeElements();
+      this.setupEventListeners();
+      this.calculate();
+    }
+    
+    initializeElements() {
+      this.n1Input = document.getElementById("n1");
+      this.n2Input = document.getElementById("n2");
+      this.startAngleInput = document.getElementById("startAngle");
+      this.endAngleInput = document.getElementById("endAngle");
+      this.brewsterAngleOutput = document.getElementById("brewsterAngle");
+      this.criticalAngleOutput = document.getElementById("criticalAngle");
+      this.graphContainer = document.getElementById("reflectanceGraph");
+    }
+    
+    setupEventListeners() {
+      const inputs = [this.n1Input, this.n2Input, this.startAngleInput, this.endAngleInput];
+      inputs.forEach(input => {
+        input.addEventListener("input", () => this.calculate());
+      });
+    }
+    
+    calculate() {
+      const n1 = parseFloat(this.n1Input.value);
+      const n2 = parseFloat(this.n2Input.value);
+      const startAngle = parseFloat(this.startAngleInput.value);
+      const endAngle = parseFloat(this.endAngleInput.value);
+      
+      // 입력값 검증
+      if ([n1, n2, startAngle, endAngle].some(v => isNaN(v)) || n1 <= 0 || n2 <= 0) {
+        this.clearResults();
+        return;
+      }
+      
+      if (startAngle >= endAngle) {
+        this.clearResults();
+        return;
+      }
+      
+      // Brewster angle 계산 (TM polarization)
+      const brewsterAngle = Math.atan(n2 / n1) * 180 / Math.PI;
+      
+      // Critical angle 계산
+      let criticalAngle = null;
+      if (n1 > n2) {
+        criticalAngle = Math.asin(n2 / n1) * 180 / Math.PI;
+      }
+      
+      // 결과 표시
+      this.brewsterAngleOutput.textContent = brewsterAngle.toFixed(2) + "°";
+      if (criticalAngle !== null) {
+        this.criticalAngleOutput.textContent = criticalAngle.toFixed(2) + "°";
+      } else {
+        this.criticalAngleOutput.textContent = "None";
+      }
+      
+      // 그래프 데이터 생성
+      this.generateGraph(n1, n2, startAngle, endAngle, brewsterAngle, criticalAngle);
+    }
+    
+    generateGraph(n1, n2, startAngle, endAngle, brewsterAngle, criticalAngle) {
+      const angles = [];
+      const teReflectance = [];
+      const tmReflectance = [];
+      
+      const numPoints = 1000;
+      const angleStep = (endAngle - startAngle) / (numPoints - 1);
+      
+      for (let i = 0; i < numPoints; i++) {
+        const angle = startAngle + i * angleStep;
+        const angleRad = angle * Math.PI / 180;
+        
+        angles.push(angle);
+        
+        // 전반사 조건 확인
+        const sinTheta2 = (n1 / n2) * Math.sin(angleRad);
+        
+        if (Math.abs(sinTheta2) > 1) {
+          // 전반사 영역
+          teReflectance.push(1.0);
+          tmReflectance.push(1.0);
+        } else {
+          // Fresnel 방정식 계산
+          const theta2Rad = Math.asin(sinTheta2);
+          
+          // TE polarization (s-편광)
+          const rTE = (n1 * Math.cos(angleRad) - n2 * Math.cos(theta2Rad)) / 
+                      (n1 * Math.cos(angleRad) + n2 * Math.cos(theta2Rad));
+          teReflectance.push(rTE * rTE);
+          
+          // TM polarization (p-편광)
+          const rTM = (n2 * Math.cos(angleRad) - n1 * Math.cos(theta2Rad)) / 
+                      (n2 * Math.cos(angleRad) + n1 * Math.cos(theta2Rad));
+          tmReflectance.push(rTM * rTM);
+        }
+      }
+      
+      // 그래프 데이터 준비
+      const traces = [
+        {
+          x: angles,
+          y: teReflectance,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'TE (s-polarization)',
+          line: {
+            color: '#666666',
+            width: 3
+          }
+        },
+        {
+          x: angles,
+          y: tmReflectance,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'TM (p-polarization)',
+          line: {
+            color: '#999999',
+            width: 3
+          }
+        }
+      ];
+      
+      // 수직선 추가
+      const shapes = [];
+      
+      // Brewster angle 수직선
+      if (brewsterAngle >= startAngle && brewsterAngle <= endAngle) {
+        shapes.push({
+          type: 'line',
+          x0: brewsterAngle,
+          y0: 0,
+          x1: brewsterAngle,
+          y1: 1,
+          line: {
+            color: '#444444',
+            width: 2,
+            dash: 'dash'
+          }
+        });
+      }
+      
+      // Critical angle 수직선
+      if (criticalAngle !== null && criticalAngle >= startAngle && criticalAngle <= endAngle) {
+        shapes.push({
+          type: 'line',
+          x0: criticalAngle,
+          y0: 0,
+          x1: criticalAngle,
+          y1: 1,
+          line: {
+            color: '#333333',
+            width: 2,
+            dash: 'dot'
+          }
+        });
+      }
+      
+      // 주석 추가
+      const annotations = [];
+      
+      if (brewsterAngle >= startAngle && brewsterAngle <= endAngle) {
+        annotations.push({
+          x: brewsterAngle,
+          y: 0.9,
+          text: `Brewster<br>${brewsterAngle.toFixed(1)}°`,
+          showarrow: true,
+          arrowhead: 2,
+          arrowsize: 1,
+          arrowwidth: 2,
+          arrowcolor: '#444444',
+          font: {
+            size: 12,
+            color: '#444444'
+          },
+          bgcolor: 'rgba(255,255,255,0.8)',
+          bordercolor: '#444444',
+          borderwidth: 1
+        });
+      }
+      
+      if (criticalAngle !== null && criticalAngle >= startAngle && criticalAngle <= endAngle) {
+        annotations.push({
+          x: criticalAngle,
+          y: 0.8,
+          text: `Critical<br>${criticalAngle.toFixed(1)}°`,
+          showarrow: true,
+          arrowhead: 2,
+          arrowsize: 1,
+          arrowwidth: 2,
+          arrowcolor: '#333333',
+          font: {
+            size: 12,
+            color: '#333333'
+          },
+          bgcolor: 'rgba(255,255,255,0.8)',
+          bordercolor: '#333333',
+          borderwidth: 1
+        });
+      }
+      
+      // 레이아웃 설정
+      const layout = {
+        xaxis: {
+          title: {
+            text: 'Incident Angle (degrees)',
+            font: {
+              size: 14,
+              color: '#555'
+            }
+          },
+          range: [startAngle, endAngle],
+          gridcolor: '#e9ecef',
+          tickcolor: '#666',
+          tickfont: {
+            color: '#666'
+          }
+        },
+        yaxis: {
+          title: {
+            text: 'Reflectance',
+            font: {
+              size: 14,
+              color: '#555'
+            }
+          },
+          range: [0, 1],
+          gridcolor: '#e9ecef',
+          tickcolor: '#666',
+          tickfont: {
+            color: '#666'
+          }
+        },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        font: {
+          family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          color: '#333'
+        },
+        legend: {
+          x: 0.02,
+          y: 0.98,
+          bgcolor: 'rgba(255,255,255,0.8)',
+          bordercolor: '#ddd',
+          borderwidth: 1,
+          font: {
+            size: 12,
+            color: '#555'
+          }
+        },
+        margin: {
+          l: 60,
+          r: 40,
+          t: 40,
+          b: 60
+        },
+        shapes: shapes,
+        annotations: annotations,
+        hovermode: 'x unified'
+      };
+      
+      // 반응형 설정
+      const config = {
+        responsive: true,
+        displayModeBar: false,
+        locale: 'en'
+      };
+      
+      // 그래프 그리기
+      Plotly.newPlot(this.graphContainer, traces, layout, config);
+    }
+    
+    clearResults() {
+      this.brewsterAngleOutput.textContent = "--°";
+      this.criticalAngleOutput.textContent = "--°";
+      
+      // 빈 그래프 표시
+      const layout = {
+        xaxis: {
+          title: 'Incident Angle (degrees)',
+          gridcolor: '#e9ecef'
+        },
+        yaxis: {
+          title: 'Reflectance',
+          range: [0, 1],
+          gridcolor: '#e9ecef'
+        },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        font: {
+          family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          color: '#333'
+        },
+        margin: {
+          l: 60,
+          r: 40,
+          t: 40,
+          b: 60
+        }
+      };
+      
+      const config = {
+        responsive: true,
+        displayModeBar: false
+      };
+      
+      Plotly.newPlot(this.graphContainer, [], layout, config);
+    }
+  }
+
+  // DOM이 준비되면 계산기 초기화
+  function initializeCalculator() {
+    // Plotly가 로드될 때까지 대기
+    if (typeof Plotly === 'undefined') {
+      setTimeout(initializeCalculator, 100);
+      return;
+    }
+    window[CalcNamespace] = new FresnelCalculator();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCalculator);
+  } else {
+    initializeCalculator();
+  }
+})();
+</script>
+</body>
+</html>

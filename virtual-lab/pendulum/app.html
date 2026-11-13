@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendulum Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 2rem;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .control-group h3 {
+            margin-bottom: 10px;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+        
+        .control-group h4 {
+            margin-bottom: 8px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        input[type="range"] {
+            height: 8px;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+        }
+        
+        input[readonly] {
+            background-color: #e9ecef;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-start {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-stop {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-clear {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .canvas-container {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background: white;
+        }
+        
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+        
+        .plot-container {
+            width: 100%;
+            height: 320px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background: white;
+        }
+        
+        .info-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .speed-display {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .equation-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .equation-box strong {
+            color: #495057;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pendulum Simulator: Single and double pendulum</h1>
+        
+        <div class="main-grid">
+            <!-- Controls Panel -->
+            <div class="controls">
+                <!-- Pendulum Type Selection -->
+                <div class="control-group">
+                    <label for="pendulumType">Pendulum Type</label>
+                    <select id="pendulumType" onchange="changePendulumType()">
+                        <option value="single">Single Pendulum</option>
+                        <option value="double">Double Pendulum</option>
+                    </select>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="control-group">
+                    <div class="button-group">
+                        <button id="animateBtn" class="btn-start" onclick="toggleAnimation()">Start</button>
+                        <button class="btn-clear" onclick="clearData()">Clear Data</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button class="btn-clear" onclick="resetToOrigin()">Reset to Origin</button>
+                    </div>
+                </div>
+                
+                <!-- Simulation Speed -->
+                <div class="control-group">
+                    <label for="simSpeed">Simulation Speed</label>
+                    <input type="range" id="simSpeed" min="0.1" max="5.0" step="0.1" value="1.0" onchange="updateSpeed()">
+                    <div class="speed-display" id="speedDisplay">1.0x</div>
+                </div>
+                
+                <!-- Physics Equations -->
+                <div class="control-group">
+                    <h3>Physics Equations</h3>
+                    <div class="equation-box" id="equationBox">
+                        <h4>Single Pendulum:</h4>
+                        <p><strong>Equation of motion:</strong><br>
+                        d²θ/dt² = -(g/L) × sin(θ) - γ × dθ/dt</p>
+                        <p style="font-size: 0.75rem; margin-top: 8px;">
+                        Where θ is angle, g is gravity (9.81 m/s²), L is length, and γ is damping coefficient.
+                        This is the exact nonlinear equation without small-angle approximation.</p>
+                    </div>
+                </div>
+                
+                <!-- Damping Explanation -->
+                <div class="control-group">
+                    <h3>Damping Effects</h3>
+                    <div class="equation-box">
+                        <p><strong>Damping Coefficient Impact:</strong></p>
+                        <p style="font-size: 0.8rem; line-height: 1.3; margin-bottom: 8px;">
+                        • <strong>Low values (0.90-0.95):</strong> High air resistance, rapid energy loss, oscillations decay quickly (like underwater or large surface area pendulum)</p>
+                        <p style="font-size: 0.8rem; line-height: 1.3; margin-bottom: 8px;">
+                        • <strong>Medium values (0.96-0.98):</strong> Normal air resistance, gradual energy loss, realistic laboratory conditions</p>
+                        <p style="font-size: 0.8rem; line-height: 1.3;">
+                        • <strong>High values (0.99-1.00):</strong> Minimal resistance, very slow energy loss, near-vacuum conditions (1.00 = no damping)</p>
+                    </div>
+                </div>
+                
+                <!-- Parameters -->
+                <div class="control-group" id="parametersGroup">
+                    <!-- Single Pendulum Parameters -->
+                    <div id="singleParams">
+                        <h3>Single Pendulum Parameters</h3>
+                        <div style="margin-bottom: 10px;">
+                            <label for="singleLength">Length (m)</label>
+                            <input type="number" id="singleLength" value="2.0" min="0.1" max="5.0" step="0.1" onchange="updateParams()">
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label for="singleRadius">Radius (m)</label>
+                            <input type="number" id="singleRadius" value="0.2" min="0.01" max="0.5" step="0.01" onchange="updateParams()">
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label for="singleMass">Mass (kg)</label>
+                            <input type="number" id="singleMass" value="1" min="0.1" max="10" step="0.1" onchange="updateParams()">
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label for="singleDamping">Damping Coefficient</label>
+                            <input type="number" id="singleDamping" value="0.999" min="0.9" max="1.0" step="0.001" onchange="updateParams()">
+                        </div>
+                    </div>
+                    
+                    <!-- Double Pendulum Parameters -->
+                    <div id="doubleParams" style="display: none;">
+                        <h3>Double Pendulum Parameters</h3>
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div>
+                                <label for="doubleLength1">Length 1 (m)</label>
+                                <input type="number" id="doubleLength1" value="1.5" min="0.1" max="3.0" step="0.1" onchange="updateParams()">
+                            </div>
+                            <div>
+                                <label for="doubleLength2">Length 2 (m)</label>
+                                <input type="number" id="doubleLength2" value="1.5" min="0.1" max="3.0" step="0.1" onchange="updateParams()">
+                            </div>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div>
+                                <label for="doubleRadius1">Radius 1 (m)</label>
+                                <input type="number" id="doubleRadius1" value="0.15" min="0.01" max="0.3" step="0.01" onchange="updateParams()">
+                            </div>
+                            <div>
+                                <label for="doubleRadius2">Radius 2 (m)</label>
+                                <input type="number" id="doubleRadius2" value="0.15" min="0.01" max="0.3" step="0.01" onchange="updateParams()">
+                            </div>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div>
+                                <label for="doubleMass1">Mass 1 (kg)</label>
+                                <input type="number" id="doubleMass1" value="1" min="0.1" max="10" step="0.1" onchange="updateParams()">
+                            </div>
+                            <div>
+                                <label for="doubleMass2">Mass 2 (kg)</label>
+                                <input type="number" id="doubleMass2" value="1" min="0.1" max="10" step="0.1" onchange="updateParams()">
+                            </div>
+                        </div>
+                        <div class="grid-2" style="margin-bottom: 10px;">
+                            <div>
+                                <label for="doubleDamping1">Damping 1</label>
+                                <input type="number" id="doubleDamping1" value="0.999" min="0.9" max="1.0" step="0.001" onchange="updateParams()">
+                            </div>
+                            <div>
+                                <label for="doubleDamping2">Damping 2</label>
+                                <input type="number" id="doubleDamping2" value="0.999" min="0.9" max="1.0" step="0.001" onchange="updateParams()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Positions -->
+                <div class="control-group">
+                    <h3>Current Positions (m)</h3>
+                    <div class="grid-2">
+                        <div>
+                            <label for="posX1">X1</label>
+                            <input type="number" id="posX1" readonly>
+                        </div>
+                        <div>
+                            <label for="posY1">Y1</label>
+                            <input type="number" id="posY1" readonly>
+                        </div>
+                    </div>
+                    <div class="grid-2" id="doublePositions" style="display: none; margin-top: 10px;">
+                        <div>
+                            <label for="posX2">X2</label>
+                            <input type="number" id="posX2" readonly>
+                        </div>
+                        <div>
+                            <label for="posY2">Y2</label>
+                            <input type="number" id="posY2" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Simulation Area -->
+            <div>
+                <div class="canvas-container">
+                    <canvas id="pendulumCanvas" width="800" height="600"></canvas>
+                </div>
+                <p class="info-text">
+                    Drag the pendulum masses to set initial positions. Click Start to begin simulation.
+                </p>
+                
+                <!-- Plot -->
+                <div class="plot-container" id="plotContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let pendulumType = 'single';
+        let isAnimating = false;
+        let isDragging = null;
+        let animationId = null;
+        let simSpeed = 1.0;
+        
+        // Canvas setup
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWidth = 800;
+        const canvasHeight = 600;
+        const originX = 50;
+        const originY = canvasHeight - 50;
+        const pivotX = canvasWidth / 2;
+        const pivotY = 100;
+        
+        // Physics constants
+        const gravity = 9.81;
+        
+        // Pendulum parameters
+        let singleParams = {
+            length: 2.0,
+            radius: 0.2,
+            mass: 1,
+            angle: Math.PI / 4,
+            angularVel: 0,
+            damping: 0.999
+        };
+        
+        let doubleParams = {
+            length1: 1.5,
+            length2: 1.5,
+            radius1: 0.15,
+            radius2: 0.15,
+            mass1: 1,
+            mass2: 1,
+            angle1: Math.PI / 4,
+            angle2: Math.PI / 2,
+            angularVel1: 0,
+            angularVel2: 0,
+            damping1: 0.999,
+            damping2: 0.999
+        };
+        
+        // Plot data
+        let plotData = {
+            time: [],
+            x1: [],
+            y1: [],
+            x2: [],
+            y2: []
+        };
+        
+        // Get scale for auto-sizing
+        function getScale() {
+            let maxLength;
+            if (pendulumType === 'single') {
+                maxLength = singleParams.length;
+            } else {
+                maxLength = doubleParams.length1 + doubleParams.length2;
+            }
+            
+            const availableHeight = canvasHeight - 200;
+            const availableWidth = canvasWidth - 200;
+            const scale = Math.min(availableHeight, availableWidth) / (maxLength * 1.2);
+            return Math.max(scale, 20);
+        }
+        
+        // Get single pendulum position
+        function getSinglePosition(params) {
+            const scale = getScale();
+            const x = pivotX + params.length * scale * Math.sin(params.angle);
+            const y = pivotY + params.length * scale * Math.cos(params.angle);
+            return { x, y };
+        }
+        
+        // Get double pendulum positions
+        function getDoublePositions(params) {
+            const scale = getScale();
+            const x1 = pivotX + params.length1 * scale * Math.sin(params.angle1);
+            const y1 = pivotY + params.length1 * scale * Math.cos(params.angle1);
+            const x2 = x1 + params.length2 * scale * Math.sin(params.angle2);
+            const y2 = y1 + params.length2 * scale * Math.cos(params.angle2);
+            return { x1, y1, x2, y2 };
+        }
+        
+        // Update single pendulum physics
+        function updateSinglePendulum(params, dt) {
+            const angularAcc = -(gravity / params.length) * Math.sin(params.angle);
+            const newAngularVel = params.angularVel + angularAcc * dt;
+            const newAngle = params.angle + newAngularVel * dt;
+            
+            return {
+                ...params,
+                angle: newAngle,
+                angularVel: newAngularVel * params.damping
+            };
+        }
+        
+        // Update double pendulum physics
+        function updateDoublePendulum(params, dt) {
+            const l1 = params.length1;
+            const l2 = params.length2;
+            const m1 = params.mass1;
+            const m2 = params.mass2;
+            const θ1 = params.angle1;
+            const θ2 = params.angle2;
+            const ω1 = params.angularVel1;
+            const ω2 = params.angularVel2;
+            
+            const δ = θ2 - θ1;
+            const den1 = (m1 + m2) * l1 - m2 * l1 * Math.cos(δ) * Math.cos(δ);
+            const den2 = (l2 / l1) * den1;
+            
+            const num1 = -m2 * l1 * ω1 * ω1 * Math.sin(δ) * Math.cos(δ) +
+                         m2 * gravity * Math.sin(θ2) * Math.cos(δ) +
+                         m2 * l2 * ω2 * ω2 * Math.sin(δ) -
+                         (m1 + m2) * gravity * Math.sin(θ1);
+            
+            const num2 = -m2 * l2 * ω2 * ω2 * Math.sin(δ) * Math.cos(δ) +
+                         (m1 + m2) * gravity * Math.sin(θ1) * Math.cos(δ) -
+                         (m1 + m2) * l1 * ω1 * ω1 * Math.sin(δ) -
+                         (m1 + m2) * gravity * Math.sin(θ2);
+            
+            const α1 = num1 / den1;
+            const α2 = num2 / den2;
+            
+            const newω1 = ω1 + α1 * dt;
+            const newω2 = ω2 + α2 * dt;
+            const newθ1 = θ1 + newω1 * dt;
+            const newθ2 = θ2 + newω2 * dt;
+            
+            return {
+                ...params,
+                angle1: newθ1,
+                angle2: newθ2,
+                angularVel1: newω1 * params.damping1,
+                angularVel2: newω2 * params.damping2
+            };
+        }
+        
+        // Draw pendulum
+        function drawPendulum() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Draw coordinate system
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(canvasWidth - 20, originY);
+            ctx.stroke();
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, 20);
+            ctx.stroke();
+            
+            // Draw axis labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.fillText('X', canvasWidth - 15, originY + 15);
+            ctx.fillText('Y', originX - 15, 15);
+            ctx.fillText('(0,0)', originX - 25, originY + 15);
+            
+            // Draw pivot point
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            const scale = getScale();
+            
+            if (pendulumType === 'single') {
+                const pos = getSinglePosition(singleParams);
+                
+                // Draw string
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(pivotX, pivotY);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+                
+                // Draw pendulum
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, Math.max(singleParams.radius * scale, 5), 0, 2 * Math.PI);
+                ctx.fill();
+                
+            } else {
+                const pos = getDoublePositions(doubleParams);
+                
+                // Draw strings
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(pivotX, pivotY);
+                ctx.lineTo(pos.x1, pos.y1);
+                ctx.moveTo(pos.x1, pos.y1);
+                ctx.lineTo(pos.x2, pos.y2);
+                ctx.stroke();
+                
+                // Draw pendulums
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.arc(pos.x1, pos.y1, Math.max(doubleParams.radius1 * scale, 5), 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = '#4444ff';
+                ctx.beginPath();
+                ctx.arc(pos.x2, pos.y2, Math.max(doubleParams.radius2 * scale, 5), 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            updatePositionDisplay();
+        }
+        
+        // Update position display
+        function updatePositionDisplay() {
+            const scale = getScale();
+            
+            if (pendulumType === 'single') {
+                const pos = getSinglePosition(singleParams);
+                document.getElementById('posX1').value = ((pos.x - originX) / scale).toFixed(3);
+                document.getElementById('posY1').value = ((originY - pos.y) / scale).toFixed(3);
+                document.getElementById('posX2').value = '0.000';
+                document.getElementById('posY2').value = '0.000';
+            } else {
+                const pos = getDoublePositions(doubleParams);
+                document.getElementById('posX1').value = ((pos.x1 - originX) / scale).toFixed(3);
+                document.getElementById('posY1').value = ((originY - pos.y1) / scale).toFixed(3);
+                document.getElementById('posX2').value = ((pos.x2 - originX) / scale).toFixed(3);
+                document.getElementById('posY2').value = ((originY - pos.y2) / scale).toFixed(3);
+            }
+        }
+        
+        // Update plot
+        function updatePlot() {
+            const scale = getScale();
+            let x1, y1, x2, y2;
+            
+            if (pendulumType === 'single') {
+                const pos = getSinglePosition(singleParams);
+                x1 = (pos.x - originX) / scale;
+                y1 = (originY - pos.y) / scale;
+                x2 = 0;
+                y2 = 0;
+            } else {
+                const pos = getDoublePositions(doubleParams);
+                x1 = (pos.x1 - originX) / scale;
+                y1 = (originY - pos.y1) / scale;
+                x2 = (pos.x2 - originX) / scale;
+                y2 = (originY - pos.y2) / scale;
+            }
+            
+            const newTime = plotData.time.length > 0 ? plotData.time[plotData.time.length - 1] + 0.016 * simSpeed : 0;
+            
+            // Add new data points
+            plotData.time.push(newTime);
+            plotData.x1.push(x1);
+            plotData.y1.push(y1);
+            plotData.x2.push(x2);
+            plotData.y2.push(y2);
+            
+            // Keep only last 500 points
+            const maxPoints = 500;
+            if (plotData.time.length > maxPoints) {
+                plotData.time = plotData.time.slice(-maxPoints);
+                plotData.x1 = plotData.x1.slice(-maxPoints);
+                plotData.y1 = plotData.y1.slice(-maxPoints);
+                plotData.x2 = plotData.x2.slice(-maxPoints);
+                plotData.y2 = plotData.y2.slice(-maxPoints);
+            }
+            
+            // Create traces
+            const traces = [
+                {
+                    x: plotData.time,
+                    y: plotData.x1,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: pendulumType === 'single' ? 'X Position' : 'X1 Position',
+                    line: { color: '#ff4444' }
+                },
+                {
+                    x: plotData.time,
+                    y: plotData.y1,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: pendulumType === 'single' ? 'Y Position' : 'Y1 Position',
+                    line: { color: '#44ff44' }
+                }
+            ];
+            
+            if (pendulumType === 'double') {
+                traces.push(
+                    {
+                        x: plotData.time,
+                        y: plotData.x2,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'X2 Position',
+                        line: { color: '#4444ff' }
+                    },
+                    {
+                        x: plotData.time,
+                        y: plotData.y2,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Y2 Position',
+                        line: { color: '#ff44ff' }
+                    }
+                );
+            }
+            
+            Plotly.react('plotContainer', traces, {
+                title: 'Pendulum Position vs Time',
+                xaxis: { title: 'Time (s)' },
+                yaxis: { title: 'Position (m)' },
+                height: 300,
+                margin: { l: 50, r: 50, t: 50, b: 50 }
+            });
+        }
+        
+        // Animation loop
+        function animate() {
+            if (!isAnimating) return;
+            
+            const dt = 0.016 * simSpeed;
+            
+            if (pendulumType === 'single') {
+                singleParams = updateSinglePendulum(singleParams, dt);
+            } else {
+                doubleParams = updateDoublePendulum(doubleParams, dt);
+            }
+            
+            drawPendulum();
+            updatePlot();
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        // Event handlers
+        function changePendulumType() {
+            pendulumType = document.getElementById('pendulumType').value;
+            
+            // Update UI
+            if (pendulumType === 'single') {
+                document.getElementById('singleParams').style.display = 'block';
+                document.getElementById('doubleParams').style.display = 'none';
+                document.getElementById('doublePositions').style.display = 'none';
+                document.getElementById('equationBox').innerHTML = `
+                    <h4>Single Pendulum:</h4>
+                    <p><strong>Equation of motion:</strong><br>
+                    d²θ/dt² = -(g/L) × sin(θ) - γ × dθ/dt</p>
+                    <p style="font-size: 0.75rem; margin-top: 8px;">
+                    Where θ is angle, g is gravity (9.81 m/s²), L is length, and γ is damping coefficient.
+                    This is the exact nonlinear equation without small-angle approximation.</p>
+                `;
+            } else {
+                document.getElementById('singleParams').style.display = 'none';
+                document.getElementById('doubleParams').style.display = 'block';
+                document.getElementById('doublePositions').style.display = 'grid';
+                document.getElementById('equationBox').innerHTML = `
+                    <h4>Double Pendulum:</h4>
+                    <p><strong>Coupled equations:</strong><br>
+                    Complex Lagrangian system with two coupled second-order ODEs.</p>
+                    <p style="font-size: 0.75rem; margin-top: 8px;">
+                    The system uses exact Lagrangian mechanics with coupling terms between pendulums.
+                    Individual damping applied to each pendulum's angular velocity.
+                    Known for chaotic behavior with sensitive dependence on initial conditions.</p>
+                `;
+            }
+            
+            drawPendulum();
+        }
+        
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            const btn = document.getElementById('animateBtn');
+            
+            if (isAnimating) {
+                btn.textContent = 'Stop';
+                btn.className = 'btn-stop';
+                animate();
+            } else {
+                btn.textContent = 'Start';
+                btn.className = 'btn-start';
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+        }
+        
+        function clearData() {
+            plotData = { time: [], x1: [], y1: [], x2: [], y2: [] };
+            Plotly.purge('plotContainer');
+            
+            // Reinitialize empty plot
+            const traces = [
+                {
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: pendulumType === 'single' ? 'X Position' : 'X1 Position',
+                    line: { color: '#ff4444' }
+                },
+                {
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: pendulumType === 'single' ? 'Y Position' : 'Y1 Position',
+                    line: { color: '#44ff44' }
+                }
+            ];
+            
+            if (pendulumType === 'double') {
+                traces.push(
+                    {
+                        x: [],
+                        y: [],
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'X2 Position',
+                        line: { color: '#4444ff' }
+                    },
+                    {
+                        x: [],
+                        y: [],
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: 'Y2 Position',
+                        line: { color: '#ff44ff' }
+                    }
+                );
+            }
+            
+            Plotly.newPlot('plotContainer', traces, {
+                title: 'Pendulum Position vs Time',
+                xaxis: { title: 'Time (s)' },
+                yaxis: { title: 'Position (m)' },
+                height: 300,
+                margin: { l: 50, r: 50, t: 50, b: 50 }
+            });
+        }
+        
+        function resetToOrigin() {
+            // Reset to initial positions
+            singleParams.angle = Math.PI / 4;
+            singleParams.angularVel = 0;
+            
+            doubleParams.angle1 = Math.PI / 4;
+            doubleParams.angle2 = Math.PI / 2;
+            doubleParams.angularVel1 = 0;
+            doubleParams.angularVel2 = 0;
+            
+            drawPendulum();
+        }
+        
+        function updateSpeed() {
+            simSpeed = parseFloat(document.getElementById('simSpeed').value);
+            document.getElementById('speedDisplay').textContent = simSpeed.toFixed(1) + 'x';
+        }
+        
+        function updateParams() {
+            // Update single pendulum parameters
+            singleParams.length = parseFloat(document.getElementById('singleLength').value);
+            singleParams.radius = parseFloat(document.getElementById('singleRadius').value);
+            singleParams.mass = parseFloat(document.getElementById('singleMass').value);
+            singleParams.damping = parseFloat(document.getElementById('singleDamping').value);
+            
+            // Update double pendulum parameters
+            doubleParams.length1 = parseFloat(document.getElementById('doubleLength1').value);
+            doubleParams.length2 = parseFloat(document.getElementById('doubleLength2').value);
+            doubleParams.radius1 = parseFloat(document.getElementById('doubleRadius1').value);
+            doubleParams.radius2 = parseFloat(document.getElementById('doubleRadius2').value);
+            doubleParams.mass1 = parseFloat(document.getElementById('doubleMass1').value);
+            doubleParams.mass2 = parseFloat(document.getElementById('doubleMass2').value);
+            doubleParams.damping1 = parseFloat(document.getElementById('doubleDamping1').value);
+            doubleParams.damping2 = parseFloat(document.getElementById('doubleDamping2').value);
+            
+            drawPendulum();
+        }
+        
+        // Mouse event handlers
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+        
+        canvas.addEventListener('mousedown', function(e) {
+            const mouse = getMousePos(e);
+            const scale = getScale();
+            
+            if (pendulumType === 'single') {
+                const pos = getSinglePosition(singleParams);
+                const dist = Math.sqrt((mouse.x - pos.x) ** 2 + (mouse.y - pos.y) ** 2);
+                if (dist < Math.max(singleParams.radius * scale, 5) + 10) {
+                    isDragging = 'single';
+                    if (isAnimating) {
+                        // Stop animation temporarily while dragging
+                        isAnimating = false;
+                        if (animationId) {
+                            cancelAnimationFrame(animationId);
+                        }
+                    }
+                }
+            } else {
+                const pos = getDoublePositions(doubleParams);
+                const dist1 = Math.sqrt((mouse.x - pos.x1) ** 2 + (mouse.y - pos.y1) ** 2);
+                const dist2 = Math.sqrt((mouse.x - pos.x2) ** 2 + (mouse.y - pos.y2) ** 2);
+                
+                if (dist1 < Math.max(doubleParams.radius1 * scale, 5) + 10) {
+                    isDragging = 'double1';
+                    if (isAnimating) {
+                        isAnimating = false;
+                        if (animationId) {
+                            cancelAnimationFrame(animationId);
+                        }
+                    }
+                } else if (dist2 < Math.max(doubleParams.radius2 * scale, 5) + 10) {
+                    isDragging = 'double2';
+                    if (isAnimating) {
+                        isAnimating = false;
+                        if (animationId) {
+                            cancelAnimationFrame(animationId);
+                        }
+                    }
+                }
+            }
+        });
+        
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const mouse = getMousePos(e);
+            
+            if (isDragging === 'single') {
+                const angle = Math.atan2(mouse.x - pivotX, mouse.y - pivotY);
+                singleParams.angle = angle;
+                singleParams.angularVel = 0;
+            } else if (isDragging === 'double1') {
+                const angle1 = Math.atan2(mouse.x - pivotX, mouse.y - pivotY);
+                doubleParams.angle1 = angle1;
+                doubleParams.angularVel1 = 0;
+            } else if (isDragging === 'double2') {
+                const pos = getDoublePositions(doubleParams);
+                const angle2 = Math.atan2(mouse.x - pos.x1, mouse.y - pos.y1);
+                doubleParams.angle2 = angle2;
+                doubleParams.angularVel2 = 0;
+            }
+            
+            drawPendulum();
+        });
+        
+        canvas.addEventListener('mouseup', function() {
+            if (isDragging) {
+                // Reset velocities when dragging ends
+                if (isDragging === 'single') {
+                    singleParams.angularVel = 0;
+                } else if (isDragging === 'double1') {
+                    doubleParams.angularVel1 = 0;
+                } else if (isDragging === 'double2') {
+                    doubleParams.angularVel2 = 0;
+                }
+                isDragging = null;
+                
+                // Resume animation if button still shows "Stop"
+                const btn = document.getElementById('animateBtn');
+                if (btn.textContent === 'Stop') {
+                    isAnimating = true;
+                    animate();
+                }
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', function() {
+            if (isDragging) {
+                // Reset velocities when mouse leaves canvas
+                if (isDragging === 'single') {
+                    singleParams.angularVel = 0;
+                } else if (isDragging === 'double1') {
+                    doubleParams.angularVel1 = 0;
+                } else if (isDragging === 'double2') {
+                    doubleParams.angularVel2 = 0;
+                }
+                isDragging = null;
+                
+                // Resume animation if button still shows "Stop"
+                const btn = document.getElementById('animateBtn');
+                if (btn.textContent === 'Stop') {
+                    isAnimating = true;
+                    animate();
+                }
+            }
+        });
+        
+        // Initialize
+        function init() {
+            drawPendulum();
+            
+            // Initialize plot with empty data
+            const traces = [
+                {
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'X Position',
+                    line: { color: '#ff4444' }
+                },
+                {
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Y Position',
+                    line: { color: '#44ff44' }
+                }
+            ];
+            
+            Plotly.newPlot('plotContainer', traces, {
+                title: 'Pendulum Position vs Time',
+                xaxis: { title: 'Time (s)' },
+                yaxis: { title: 'Position (m)' },
+                height: 300,
+                margin: { l: 50, r: 50, t: 50, b: 50 }
+            }).catch(function(err) {
+                console.error('Plotly initialization error:', err);
+                // Fallback: create a simple div with error message
+                document.getElementById('plotContainer').innerHTML = 
+                    '<div style="padding: 20px; text-align: center; color: #666;">Plot will appear here when simulation starts</div>';
+            });
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

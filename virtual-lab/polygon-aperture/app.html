@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Regular N-gon Aperture Diffraction</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      max-width: 1800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .controls, .advanced-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      flex: 1 1 220px;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .plots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    #plot3d, #polygonShape, #contourPlot {
+      height: 500px;
+    }
+    .error-message {
+      color: red;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    .info-message {
+      color: #666;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fraunhofer diffraction pattern calculator: 2D regular N-gon aperture</h1>
+  <h2>(Far-field-diffraction pattern with regular polygon aperture geometry)</h2>
+
+<div class="controls">
+  <div class="input-group">
+    <label for="nSides">Number of sides (N)</label>
+    <input type="number" id="nSides" value="3" min="3" step="1">
+    <div id="nSidesError" class="error-message"></div>
+    <div id="polygonName" class="info-message">Regular Hexagon</div>
+  </div>
+  <div class="input-group">
+    <label for="sideLength">Side length [mm]</label>
+    <input type="number" id="sideLength" value="1.0" min="0" step="0.1">
+  </div>
+  <div class="input-group">
+    <label for="lambda">Wavelength (λ) [nm]</label>
+    <input type="number" id="lambda" value="632.8">
+  </div>
+  <div class="input-group">
+    <label for="screen">Screen Distance from aperture (z) [m]</label>
+    <input type="number" id="screen" value="1" step="0.1">
+  </div>
+</div>
+
+<div class="advanced-controls">
+  <div class="input-group">
+    <label for="viewAngle">3D View Angle (polar,azim)</label>
+    <input type="text" id="viewAngle" value="45,45">
+  </div>
+  <div class="input-group">
+    <label for="range">X-Y Range [cm]</label>
+    <input type="number" id="range" value="1" step="0.1">
+  </div>
+  <div class="input-group">
+    <label for="res">Resolution (Num. of points per axis)</label>
+    <input type="number" id="res" value="80" step="10">
+  </div>
+  <div class="input-group">
+    <label for="samplingDensity">Sampling Density (for numerical integration)</label>
+    <input type="number" id="samplingDensity" value="25" min="10" max="50">
+    <div class="info-message">Higher values = more accurate but slower</div>
+  </div>
+  <div class="input-group">
+    <label for="intensityScale">Intensity Scale</label>
+    <select id="intensityScale">
+      <option value="linear">Linear</option>
+      <option value="gamma" selected>Gamma (γ=0.5)</option>
+      </select>
+    <div class="info-message">Log/Gamma enhance weak diffraction features</div>
+  </div>
+  <div class="input-group">
+    <label for="colormap">Colormap</label>
+    <select id="colormap">
+      <option value="Rainbow" selected>Rainbow</option>
+      <option value="Viridis">Viridis</option>
+      <option value="Plasma">Plasma</option>
+      <option value="Hot">Hot</option>
+      <option value="Jet">Jet</option>
+      <option value="Turbo">Turbo</option>
+    </select>
+  </div>
+</div>
+
+<div class="input-group">
+  <label for="exportSelect">Export simulated data</label>
+  <select id="exportSelect">
+    <option value="xy">X-Y Grid</option>
+    <option value="intensity">Intensity Map</option>
+    <option value="vertices">Polygon Vertices</option>
+  </select>
+  <button onclick="downloadData()">Export (.csv)</button>
+</div>
+
+<div class="plots">
+  <div id="plot3d"></div>
+  <div id="polygonShape"></div>
+  <div id="contourPlot"></div>
+</div>
+
+<script>
+function sinc(x) {
+  return x === 0 ? 1 : Math.sin(x) / x;
+}
+
+let xVals = [], yVals = [], zVals = [];
+let polygonVertices = [];
+
+function getPolygonName(n) {
+  const names = {
+    3: "Equilateral Triangle",
+    4: "Square",
+    5: "Regular Pentagon",
+    6: "Regular Hexagon",
+    7: "Regular Heptagon",
+    8: "Regular Octagon",
+    9: "Regular Nonagon",
+    10: "Regular Decagon",
+    12: "Regular Dodecagon"
+  };
+  return names[n] || `Regular ${n}-gon`;
+}
+
+function getRegularPolygonVertices(n, sideLength) {
+  // Calculate circumradius for regular n-gon with given side length
+  const circumradius = sideLength / (2 * Math.sin(Math.PI / n));
+  
+  const vertices = [];
+  for (let i = 0; i < n; i++) {
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2; // Start from top
+    const x = circumradius * Math.cos(angle);
+    const y = circumradius * Math.sin(angle);
+    vertices.push([x, y]);
+  }
+  
+  return vertices;
+}
+
+function isPointInPolygon(x, y, vertices) {
+  let inside = false;
+  const n = vertices.length;
+  
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = vertices[i][0], yi = vertices[i][1];
+    const xj = vertices[j][0], yj = vertices[j][1];
+    
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  
+  return inside;
+}
+
+function calculatePolygonArea(vertices) {
+  let area = 0;
+  const n = vertices.length;
+  
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    area += vertices[i][0] * vertices[j][1];
+    area -= vertices[j][0] * vertices[i][1];
+  }
+  
+  return Math.abs(area) / 2;
+}
+
+function getPolygonBounds(vertices) {
+  const xs = vertices.map(v => v[0]);
+  const ys = vertices.map(v => v[1]);
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys)
+  };
+}
+
+function updatePolygonShape() {
+  const n = parseInt(document.getElementById("nSides").value);
+  const sideLength = parseFloat(document.getElementById("sideLength").value);
+  
+  if (isNaN(n) || n < 3) {
+    document.getElementById("nSidesError").textContent = "N must be 3 or greater";
+    return false;
+  }
+  
+  if (isNaN(sideLength) || sideLength <= 0) {
+    document.getElementById("nSidesError").textContent = "Side length must be positive";
+    return false;
+  }
+  
+  document.getElementById("nSidesError").textContent = "";
+  document.getElementById("polygonName").textContent = getPolygonName(n);
+  
+  // Get polygon vertices in mm, then convert to meters for calculation
+  const shapeVertices = getRegularPolygonVertices(n, sideLength);
+  polygonVertices = shapeVertices.map(v => [v[0] * 1e-3, v[1] * 1e-3]);
+  
+  // Create polygon shape plot
+  const plotVertices = [...shapeVertices, shapeVertices[0]]; // Close the polygon
+  
+  // Find plot range
+  const bounds = getPolygonBounds(shapeVertices);
+  const maxCoord = Math.max(Math.abs(bounds.minX), Math.abs(bounds.maxX), 
+                           Math.abs(bounds.minY), Math.abs(bounds.maxY)) * 1.2;
+  
+  // Create vertex labels
+  const vertexLabels = shapeVertices.map((v, i) => ({
+    x: v[0] * 1.15,
+    y: v[1] * 1.15,
+    text: `V${i+1}`,
+    showarrow: false,
+    font: { size: 10, color: 'red' }
+  }));
+  
+  Plotly.newPlot("polygonShape", [
+    {
+      x: plotVertices.map(v => v[0]),
+      y: plotVertices.map(v => v[1]),
+      mode: 'lines+markers',
+      line: { color: 'blue', width: 3 },
+      marker: { size: 8, color: 'red' },
+      name: 'Polygon',
+      fill: 'tonexty',
+      fillcolor: 'rgba(0,100,255,0.2)'
+    }
+  ], {
+    title: `${getPolygonName(n)} (side=${sideLength}mm)`,
+    xaxis: { 
+      title: "x [mm]", 
+      range: [-maxCoord, maxCoord],
+      scaleanchor: "y",
+      scaleratio: 1,
+      zeroline: true,
+      zerolinecolor: 'gray',
+      zerolinewidth: 1
+    },
+    yaxis: { 
+      title: "y [mm]", 
+      range: [-maxCoord, maxCoord],
+      zeroline: true,
+      zerolinecolor: 'gray',
+      zerolinewidth: 1
+    },
+    annotations: vertexLabels,
+    showlegend: false
+  });
+  
+  return true;
+}
+
+function updatePlot() {
+  if (!updatePolygonShape()) {
+    return;
+  }
+  
+  const lambda = parseFloat(document.getElementById("lambda").value) * 1e-9;
+  const z = parseFloat(document.getElementById("screen").value);
+  const range = parseFloat(document.getElementById("range").value) / 100;
+  const res = parseInt(document.getElementById("res").value);
+  const samplingDensity = parseInt(document.getElementById("samplingDensity").value);
+  const angle = document.getElementById("viewAngle").value.split(',').map(Number);
+
+  const dx = (2 * range) / res;
+  xVals = [], yVals = [], zVals = [];
+  let maxI = 0;
+
+  // Calculate polygon bounds for efficient sampling
+  const bounds = getPolygonBounds(polygonVertices);
+  const polygonArea = calculatePolygonArea(polygonVertices);
+
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    xVals.push(xi * 100);
+  }
+  for (let j = 0; j < res; j++) {
+    const yj = -range + j * dx;
+    yVals.push(yj * 100);
+  }
+
+  // Calculate diffraction pattern using numerical integration
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    let row = [];
+    for (let j = 0; j < res; j++) {
+      const yj = -range + j * dx;
+      
+      const kx = 2 * Math.PI * xi / (lambda * z);
+      const ky = 2 * Math.PI * yj / (lambda * z);
+      
+      // Numerical integration over the polygon
+      let realPart = 0, imagPart = 0;
+      let sampleCount = 0;
+      
+      const stepX = (bounds.maxX - bounds.minX) / samplingDensity;
+      const stepY = (bounds.maxY - bounds.minY) / samplingDensity;
+      
+      for (let si = 0; si <= samplingDensity; si++) {
+        for (let sj = 0; sj <= samplingDensity; sj++) {
+          const sx = bounds.minX + si * stepX;
+          const sy = bounds.minY + sj * stepY;
+          
+          if (isPointInPolygon(sx, sy, polygonVertices)) {
+            const phase = kx * sx + ky * sy;
+            realPart += Math.cos(phase);
+            imagPart += Math.sin(phase);
+            sampleCount++;
+          }
+        }
+      }
+      
+      if (sampleCount > 0) {
+        realPart /= sampleCount;
+        imagPart /= sampleCount;
+      }
+      
+      const I = (realPart * realPart + imagPart * imagPart) * polygonArea;
+      row.push(I);
+      maxI = Math.max(maxI, I);
+    }
+    zVals.push(row);
+  }
+
+  // Apply intensity scaling
+  const intensityScale = document.getElementById("intensityScale").value;
+  const colormap = document.getElementById("colormap").value;
+  
+  if (maxI > 0) {
+    for (let i = 0; i < res; i++) {
+      for (let j = 0; j < res; j++) {
+        let normalizedI = zVals[i][j] / maxI;
+        
+        // Apply different scaling methods
+        switch(intensityScale) {
+          case 'log':
+            // Add small offset to avoid log(0), then normalize
+            normalizedI = Math.log10(normalizedI + 1e-6) / Math.log10(1 + 1e-6);
+            break;
+          case 'gamma':
+            normalizedI = Math.pow(normalizedI, 0.5); // Gamma correction with γ=0.5
+            break;
+          case 'sqrt':
+            normalizedI = Math.sqrt(normalizedI);
+            break;
+          case 'linear':
+          default:
+            // Keep as is
+            break;
+        }
+        
+        zVals[i][j] = Math.max(0, normalizedI); // Ensure non-negative
+      }
+    }
+  }
+
+  const surfaceData = {
+    z: zVals, x: xVals, y: yVals,
+    type: "surface", 
+    colorscale: colormap, 
+    showscale: true,
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  };
+
+  Plotly.newPlot("plot3d", [surfaceData], {
+    title: "Diffraction Pattern (3D)",
+    scene: {
+      xaxis: { title: "x [cm]" },
+      yaxis: { title: "y [cm]" },
+      zaxis: { title: "Intensity" },
+      camera: {
+        eye: {
+          x: Math.cos(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          y: Math.sin(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          z: Math.cos(angle[0]*Math.PI/180)
+        }
+      }
+    }
+  });
+
+  Plotly.newPlot("contourPlot", [{
+    z: zVals, x: xVals, y: yVals,
+    type: "contour",
+    colorscale: colormap,
+    contours: { 
+      coloring: "heatmap",
+      start: 0,
+      end: 1,
+      size: 0.05  // More contour lines for better detail
+    },
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  }], {
+    title: "Diffraction pattern (2D contour plot)",
+    xaxis: { title: "x [cm]" },
+    yaxis: { title: "y [cm]" }
+  });
+}
+
+function downloadData() {
+  const type = document.getElementById("exportSelect").value;
+  let csv = "";
+  
+  if (type === "xy") {
+    csv = "x[cm],y[cm]\n";
+    xVals.forEach(x => yVals.forEach(y => csv += `${x},${y}\n`));
+  } else if (type === "intensity") {
+    csv = "x/y," + yVals.join(",") + "\n";
+    xVals.forEach((x, i) => {
+      csv += x + "," + zVals[i].join(",") + "\n";
+    });
+  } else if (type === "vertices") {
+    csv = "vertex,x[mm],y[mm]\n";
+    const shapeVertices = getRegularPolygonVertices(
+      parseInt(document.getElementById("nSides").value),
+      parseFloat(document.getElementById("sideLength").value)
+    );
+    shapeVertices.forEach((v, i) => {
+      csv += `V${i+1},${v[0]},${v[1]}\n`;
+    });
+  }
+  
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${type}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+["nSides", "sideLength", "lambda", "screen", "range", "res", "viewAngle", "samplingDensity", "intensityScale", "colormap"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updatePlot)
+);
+
+updatePlot();
+</script>
+</body>
+</html>

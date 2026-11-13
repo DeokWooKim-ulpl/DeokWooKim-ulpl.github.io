@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Data Fitting Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 5px;
+        }
+        
+        /* Data Tabs for Multiple Plot */
+        .data-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .data-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.3s;
+            position: relative;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .data-tab.active {
+            background: #007acc;
+            color: white;
+        }
+        
+        .data-tab:hover:not(.active) {
+            background: #e9ecef;
+        }
+        
+        .data-tab .close-btn {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 0;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .data-tab .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .add-data-tab {
+            padding: 8px 12px;
+            cursor: pointer;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+        
+        .add-data-tab:hover {
+            background: #218838;
+        }
+        
+        .data-name-input {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        
+        .data-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 8px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        
+        .data-table td {
+            padding: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .data-table input {
+            width: 100%;
+            border: none;
+            padding: 4px;
+            text-align: center;
+        }
+        
+        .paste-area {
+            margin-top: 10px;
+            padding: 10px;
+            border: 2px dashed #007acc;
+            border-radius: 4px;
+            background-color: #f0f8ff;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .paste-area:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .form-group {
+            margin: 10px 0;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .equation-display {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .fitting-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .parameters-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .parameters-table th, .parameters-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .parameters-table th {
+            background-color: #f8f9fa;
+        }
+        
+        .plot-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .plot-details .form-group {
+            margin: 5px 0;
+        }
+        
+        .size-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .color-select {
+            height: 35px;
+        }
+        
+        .btn {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background-color: #005fa3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .download-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .download-group select {
+            width: auto;
+            min-width: 100px;
+        }
+        
+        /* Multiple plot specific styles */
+        .multi-data-content {
+            display: none;
+        }
+        
+        .multi-data-content.active {
+            display: block;
+        }
+        
+        .dataset-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="panel">
+                <div class="section-title">Data Sets</div>
+                <div class="data-tabs" id="dataTabs">
+                    <button class="add-data-tab" onclick="addDataSet()">+ Add Data</button>
+                </div>
+                
+                <!-- Data content containers -->
+                <div id="multiDataContainers"></div>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="clearAllMultiData()">Clear All Data</button>
+                    <button class="btn btn-warning" onclick="undoMultiLastAction()">Undo</button>
+                    <button class="btn btn-success" onclick="saveAllData()">Save All Data</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">Fitting Function</div>
+                <div id="multiFittingContainer">
+                    <p>Select a data set to configure fitting options.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">Parameters</div>
+                <div id="multiParametersContainer">
+                    <p>Select a data set to view fitting parameters.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="panel">
+                <div class="section-title">Plot</div>
+                <div class="size-inputs">
+                    <div class="form-group">
+                        <label>Width:</label>
+                        <input type="number" id="plotWidth" value="600" onchange="updatePlotSize()">
+                    </div>
+                    <div class="form-group">
+                        <label>Height:</label>
+                        <input type="number" id="plotHeight" value="400" onchange="updatePlotSize()">
+                    </div>
+                </div>
+                <div class="download-group">
+                    <select id="imageFormat">
+                        <option value="png">PNG</option>
+                        <option value="jpeg">JPEG</option>
+                        <option value="svg">SVG</option>
+                    </select>
+                    <button class="btn btn-success" onclick="downloadPlot()">Download Plot</button>
+                </div>
+                <div id="plotDiv"></div>
+            </div>
+
+            <div class="panel">
+                <div class="section-title">Plot Details</div>
+                <div class="plot-details">
+                    <div class="form-group">
+                        <label>X Label:</label>
+                        <input type="text" id="xLabel" value="X" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Y Label:</label>
+                        <input type="text" id="yLabel" value="Y" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family:</label>
+                        <select id="fontFamily" onchange="updatePlot()">
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Georgia">Georgia</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Label Font Size:</label>
+                        <input type="number" id="labelFontSize" value="30" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Tick Font Size:</label>
+                        <input type="number" id="tickFontSize" value="20" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Label Font Color:</label>
+                        <select class="color-select" id="labelFontColor" onchange="updatePlot()">
+                            <option value="#000000">Black</option>
+                            <option value="#1f77b4">Blue</option>
+                            <option value="#0000ff">Bright Blue</option>
+                            <option value="#00ffff">Bright Cyan</option>
+                            <option value="#00ff00">Bright Green</option>
+                            <option value="#ff0000">Bright Red</option>
+                            <option value="#8c564b">Brown</option>
+                            <option value="#17becf">Cyan</option>
+                            <option value="#ffa500">Dark Orange</option>
+                            <option value="#800080">Dark Purple</option>
+                            <option value="#008000">Green</option>
+                            <option value="#7f7f7f">Gray</option>
+                            <option value="#ff69b4">Hot Pink</option>
+                            <option value="#20b2aa">Light Sea Green</option>
+                            <option value="#ff00ff">Magenta</option>
+                            <option value="#800000">Maroon</option>
+                            <option value="#000080">Navy</option>
+                            <option value="#bcbd22">Olive</option>
+                            <option value="#ff7f0e">Orange</option>
+                            <option value="#e377c2">Pink</option>
+                            <option value="#dda0dd">Plum</option>
+                            <option value="#9467bd">Purple</option>
+                            <option value="#d62728">Red</option>
+                            <option value="#ffff00">Yellow</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Marker Size:</label>
+                        <input type="number" id="markerSize" value="10" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Curve Width:</label>
+                        <input type="number" id="curveWidth" value="2" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Show Grid:</label>
+                        <select id="showGrid" onchange="updatePlot()">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Show Data Box:</label>
+                        <select id="showDataBox" onchange="updatePlot()">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Axis Line Width:</label>
+                        <input type="number" id="dataBoxLineWidth" value="2" min="1" max="10" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Axis Line Color:</label>
+                        <select class="color-select" id="dataBoxColor" onchange="updatePlot()">
+                            <option value="#000000">Black</option>
+                            <option value="#1f77b4">Blue</option>
+                            <option value="#0000ff">Bright Blue</option>
+                            <option value="#00ffff">Bright Cyan</option>
+                            <option value="#00ff00">Bright Green</option>
+                            <option value="#ff0000">Bright Red</option>
+                            <option value="#8c564b">Brown</option>
+                            <option value="#17becf">Cyan</option>
+                            <option value="#ffa500">Dark Orange</option>
+                            <option value="#800080">Dark Purple</option>
+                            <option value="#008000">Green</option>
+                            <option value="#7f7f7f">Gray</option>
+                            <option value="#ff69b4">Hot Pink</option>
+                            <option value="#20b2aa">Light Sea Green</option>
+                            <option value="#ff00ff">Magenta</option>
+                            <option value="#800000">Maroon</option>
+                            <option value="#000080">Navy</option>
+                            <option value="#bcbd22">Olive</option>
+                            <option value="#ff7f0e">Orange</option>
+                            <option value="#e377c2">Pink</option>
+                            <option value="#dda0dd">Plum</option>
+                            <option value="#9467bd">Purple</option>
+                            <option value="#d62728">Red</option>
+                            <option value="#ffff00">Yellow</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Marker Color:</label>
+                        <select class="color-select" id="markerColor" onchange="updateDataSetPlotSetting('markerColor', this.value); updatePlot();">
+                            <option value="#000000">Black</option>
+                            <option value="#1f77b4">Blue</option>
+                            <option value="#0000ff">Bright Blue</option>
+                            <option value="#00ffff">Bright Cyan</option>
+                            <option value="#00ff00">Bright Green</option>
+                            <option value="#ff0000">Bright Red</option>
+                            <option value="#8c564b">Brown</option>
+                            <option value="#17becf">Cyan</option>
+                            <option value="#008000">Dark Green</option>
+                            <option value="#ffa500">Dark Orange</option>
+                            <option value="#800080">Dark Purple</option>
+                            <option value="#2ca02c">Green</option>
+                            <option value="#7f7f7f">Gray</option>
+                            <option value="#ff69b4">Hot Pink</option>
+                            <option value="#20b2aa">Light Sea Green</option>
+                            <option value="#ff00ff">Magenta</option>
+                            <option value="#800000">Maroon</option>
+                            <option value="#000080">Navy</option>
+                            <option value="#bcbd22">Olive</option>
+                            <option value="#ff7f0e">Orange</option>
+                            <option value="#e377c2">Pink</option>
+                            <option value="#dda0dd">Plum</option>
+                            <option value="#9467bd">Purple</option>
+                            <option value="#d62728">Red</option>
+                            <option value="#ffff00">Yellow</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Curve Color:</label>
+                        <select class="color-select" id="curveColor" onchange="updateDataSetPlotSetting('curveColor', this.value); updatePlot();">
+                            <option value="#000000">Black</option>
+                            <option value="#1f77b4">Blue</option>
+                            <option value="#0000ff">Bright Blue</option>
+                            <option value="#00ffff">Bright Cyan</option>
+                            <option value="#00ff00">Bright Green</option>
+                            <option value="#ff0000">Bright Red</option>
+                            <option value="#8c564b">Brown</option>
+                            <option value="#17becf">Cyan</option>
+                            <option value="#008000">Dark Green</option>
+                            <option value="#ffa500">Dark Orange</option>
+                            <option value="#800080">Dark Purple</option>
+                            <option value="#2ca02c">Green</option>
+                            <option value="#7f7f7f">Gray</option>
+                            <option value="#ff69b4">Hot Pink</option>
+                            <option value="#20b2aa">Light Sea Green</option>
+                            <option value="#ff00ff">Magenta</option>
+                            <option value="#800000">Maroon</option>
+                            <option value="#000080">Navy</option>
+                            <option value="#bcbd22">Olive</option>
+                            <option value="#ff7f0e">Orange</option>
+                            <option value="#e377c2">Pink</option>
+                            <option value="#dda0dd">Plum</option>
+                            <option value="#9467bd">Purple</option>
+                            <option value="#d62728">Red</option>
+                            <option value="#ffff00">Yellow</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Marker Style:</label>
+                        <select id="markerStyle" onchange="updateDataSetPlotSetting('markerStyle', this.value); updatePlot();">
+                            <option value="circle">Circle</option>
+                            <option value="circle-open">Circle Open</option>
+                            <option value="square">Square</option>
+                            <option value="square-open">Square Open</option>
+                            <option value="triangle-up">Triangle Up</option>
+                            <option value="triangle-up-open">Triangle Up Open</option>
+                            <option value="diamond">Diamond</option>
+                            <option value="diamond-open">Diamond Open</option>
+                            <option value="cross">Cross</option>
+                            <option value="x">X</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Curve Style:</label>
+                        <select id="curveStyle" onchange="updateDataSetPlotSetting('curveStyle', this.value); updatePlot();">
+                            <option value="solid">Solid</option>
+                            <option value="dash">Dashed</option>
+                            <option value="dot">Dotted</option>
+                            <option value="dashdot">Dash-Dot</option>
+                            <option value="longdash">Long Dash</option>
+                            <option value="longdashdot">Long Dash-Dot</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="section-title" style="margin-top: 20px; font-size: 14px;">Axis Settings</div>
+                <div class="plot-details">
+                    <div class="form-group">
+                        <label>X Range [min,max]:</label>
+                        <input type="text" id="xRange" placeholder="e.g., 0,100" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Y Range [min,max]:</label>
+                        <input type="text" id="yRange" placeholder="e.g., 0,1000" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>X Ticks [start:step:end]:</label>
+                        <input type="text" id="xTicks" placeholder="e.g., 0:10:100" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Y Ticks [start:step:end]:</label>
+                        <input type="text" id="yTicks" placeholder="e.g., 0:100:1000" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>X Label Distance:</label>
+                        <input type="number" id="xLabelDistance" value="20" min="0" max="200" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                    <div class="form-group">
+                        <label>Y Label Distance:</label>
+                        <input type="number" id="yLabelDistance" value="30" min="0" max="200" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                </div>
+                
+                <div class="section-title" style="margin-top: 20px; font-size: 14px;">Legend Settings</div>
+                <div class="plot-details">
+                    <div class="form-group">
+                        <label>Show Legend:</label>
+                        <select id="showLegend" onchange="updatePlot()">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Legend Position:</label>
+                        <select id="legendPosition" onchange="updatePlot()">
+                            <option value="top-left">Top Left</option>
+                            <option value="top-right">Top Right</option>
+                            <option value="bottom-right">Bottom Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Legend Font Size:</label>
+                        <input type="number" id="legendFontSize" value="12" oninput="updatePlot()" onchange="updatePlot()">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for Multiple Plot
+        let multiDataSets = {};
+        let activeDataSetId = null;
+        let dataSetCounter = 0;
+        let multiUndoStack = [];
+        const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+        
+        const MAX_UNDO_STACK = 10;
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePlot();
+            setTimeout(updatePlotSize, 100);
+            
+            // Initialize with one dataset
+            setTimeout(() => {
+                addDataSet();
+            }, 200);
+        });
+
+        // Multiple Plot Functions
+        function addDataSet() {
+            dataSetCounter++;
+            const id = 'data' + dataSetCounter;
+            const name = 'Data ' + dataSetCounter;
+            const color = colors[(dataSetCounter - 1) % colors.length];
+            
+            multiDataSets[id] = {
+                id: id,
+                name: name,
+                color: color,
+                dataPoints: [],
+                fittingCurve: [],
+                fittingParameters: {},
+                visible: true,
+                // Individual plot settings for each dataset
+                plotSettings: {
+                    markerSize: 10,
+                    curveWidth: 2,
+                    markerColor: color,
+                    curveColor: color,
+                    markerStyle: 'circle',
+                    curveStyle: 'solid'
+                }
+            };
+            
+            createDataTab(id, name, color);
+            createDataContent(id, name);
+            switchDataSet(id);
+            updatePlot();
+        }
+
+        function createDataTab(id, name, color) {
+            const tabsContainer = document.getElementById('dataTabs');
+            const addButton = tabsContainer.querySelector('.add-data-tab');
+            
+            const tab = document.createElement('div');
+            tab.className = 'data-tab';
+            tab.setAttribute('data-id', id);
+            tab.innerHTML = `
+                <span class="color-indicator" style="background-color: ${color}"></span>
+                <span class="tab-name">${name}</span>
+                <button class="close-btn" onclick="removeDataSet('${id}')" title="Remove dataset">×</button>
+            `;
+            tab.onclick = (e) => {
+                if (!e.target.classList.contains('close-btn')) {
+                    switchDataSet(id);
+                }
+            };
+            
+            tabsContainer.insertBefore(tab, addButton);
+        }
+
+        function createDataContent(id, name) {
+            const container = document.getElementById('multiDataContainers');
+            
+            const content = document.createElement('div');
+            content.className = 'multi-data-content';
+            content.id = 'content-' + id;
+            content.innerHTML = `
+                <div class="dataset-controls">
+                    <input type="text" class="data-name-input" value="${name}" onchange="updateDataSetName('${id}', this.value)">
+                    <input type="color" value="${multiDataSets[id].color}" onchange="updateDataSetColor('${id}', this.value)">
+                    <button class="btn btn-sm ${multiDataSets[id].visible ? 'btn-success' : 'btn-secondary'}" onclick="toggleDataSetVisibility('${id}')" id="visibility-${id}">
+                        ${multiDataSets[id].visible ? 'Visible' : 'Hidden'}
+                    </button>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>X</th>
+                                <th>Y</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-${id}">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="paste-area" id="paste-${id}" tabindex="0">
+                    Click here to paste data (Ctrl+V)
+                </div>
+            `;
+            
+            container.appendChild(content);
+            
+            // Initialize data table for this dataset
+            initializeMultiDataTable(id);
+            setupMultiPasteArea(id);
+        }
+
+        function initializeMultiDataTable(id) {
+            const tbody = document.getElementById('tbody-' + id);
+            for (let i = 0; i < 10; i++) {
+                addMultiDataRow(id);
+            }
+            attachMultiInputEventListeners(id);
+        }
+
+        function addMultiDataRow(id) {
+            const tbody = document.getElementById('tbody-' + id);
+            const row = tbody.insertRow();
+            const cellX = row.insertCell(0);
+            const cellY = row.insertCell(1);
+            cellX.innerHTML = '<input type="number" step="any">';
+            cellY.innerHTML = '<input type="number" step="any">';
+            return row;
+        }
+
+        function attachMultiInputEventListeners(id) {
+            const inputs = document.querySelectorAll(`#tbody-${id} input`);
+            inputs.forEach(input => {
+                input.removeEventListener('change', () => updateMultiDataPoint(id));
+                input.addEventListener('change', () => updateMultiDataPoint(id));
+            });
+        }
+
+        function updateMultiDataPoint(id) {
+            collectMultiDataPoints(id);
+            updatePlot();
+        }
+
+        function collectMultiDataPoints(id) {
+            const tbody = document.getElementById('tbody-' + id);
+            const rows = tbody.getElementsByTagName('tr');
+            multiDataSets[id].dataPoints = [];
+            
+            for (let i = 0; i < rows.length; i++) {
+                const inputs = rows[i].getElementsByTagName('input');
+                const x = parseFloat(inputs[0].value);
+                const y = parseFloat(inputs[1].value);
+                
+                if (!isNaN(x) && !isNaN(y)) {
+                    multiDataSets[id].dataPoints.push({x: x, y: y});
+                }
+            }
+            
+            // Auto-add rows if needed
+            let emptyRowsAtEnd = 0;
+            for (let i = rows.length - 1; i >= 0; i--) {
+                const inputs = rows[i].getElementsByTagName('input');
+                if (inputs[0].value === '' && inputs[1].value === '') {
+                    emptyRowsAtEnd++;
+                } else {
+                    break;
+                }
+            }
+            
+            while (emptyRowsAtEnd < 3) {
+                const newRow = addMultiDataRow(id);
+                const inputs = newRow.getElementsByTagName('input');
+                inputs.forEach(input => {
+                    input.addEventListener('change', () => updateMultiDataPoint(id));
+                });
+                emptyRowsAtEnd++;
+            }
+        }
+
+        function setupMultiPasteArea(id) {
+            const pasteArea = document.getElementById('paste-' + id);
+            
+            pasteArea.addEventListener('click', function() {
+                pasteArea.focus();
+            });
+            
+            pasteArea.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                processMultiPastedData(id, pastedData);
+            });
+        }
+
+        function processMultiPastedData(id, data) {
+            saveMultiState();
+            
+            const lines = data.trim().split('\n');
+            const newDataPoints = [];
+            
+            lines.forEach(line => {
+                const values = line.split(/[\t\s,]+/).filter(val => val.trim() !== '');
+                
+                if (values.length >= 2) {
+                    const x = parseFloat(values[0]);
+                    const y = parseFloat(values[1]);
+                    
+                    if (!isNaN(x) && !isNaN(y)) {
+                        newDataPoints.push({x: x, y: y});
+                    }
+                }
+            });
+            
+            if (newDataPoints.length === 0) {
+                alert('No valid data found. Please ensure data is in two columns (X Y format).');
+                return;
+            }
+            
+            const tbody = document.getElementById('tbody-' + id);
+            tbody.innerHTML = '';
+            
+            for (let i = 0; i < newDataPoints.length + 5; i++) {
+                addMultiDataRow(id);
+            }
+            
+            const rows = tbody.getElementsByTagName('tr');
+            newDataPoints.forEach((point, index) => {
+                if (index < rows.length) {
+                    const inputs = rows[index].getElementsByTagName('input');
+                    inputs[0].value = point.x;
+                    inputs[1].value = point.y;
+                }
+            });
+            
+            attachMultiInputEventListeners(id);
+            collectMultiDataPoints(id);
+            updatePlot();
+            
+            alert('Successfully imported ' + newDataPoints.length + ' data points to ' + multiDataSets[id].name + '.');
+        }
+
+        function switchDataSet(id) {
+            activeDataSetId = id;
+            
+            // Update data tab active state
+            document.querySelectorAll('.data-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-id="${id}"]`).classList.add('active');
+            
+            // Update data content visibility
+            document.querySelectorAll('.multi-data-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('content-' + id).classList.add('active');
+            
+            // Update fitting controls
+            updateMultiFittingControls(id);
+            updateMultiParametersDisplay(id);
+            
+            // Update plot details with dataset-specific settings
+            updatePlotDetailsForDataSet(id);
+        }
+        
+        function updatePlotDetailsForDataSet(id) {
+            const dataSet = multiDataSets[id];
+            const settings = dataSet.plotSettings;
+            
+            // Update plot details controls with dataset-specific values
+            document.getElementById('markerSize').value = settings.markerSize;
+            document.getElementById('curveWidth').value = settings.curveWidth;
+            document.getElementById('markerColor').value = settings.markerColor;
+            document.getElementById('curveColor').value = settings.curveColor;
+            document.getElementById('markerStyle').value = settings.markerStyle;
+            document.getElementById('curveStyle').value = settings.curveStyle;
+        }
+        
+        // Function to update individual dataset plot settings
+        function updateDataSetPlotSetting(property, value) {
+            if (activeDataSetId && multiDataSets[activeDataSetId]) {
+                multiDataSets[activeDataSetId].plotSettings[property] = value;
+                
+                // If marker color is changed, also update the dataset color and color indicator
+                if (property === 'markerColor') {
+                    multiDataSets[activeDataSetId].color = value;
+                    const indicator = document.querySelector(`[data-id="${activeDataSetId}"] .color-indicator`);
+                    if (indicator) {
+                        indicator.style.backgroundColor = value;
+                    }
+                    // Also update the color input in dataset controls
+                    const colorInput = document.querySelector(`#content-${activeDataSetId} input[type="color"]`);
+                    if (colorInput) {
+                        colorInput.value = value;
+                    }
+                }
+                
+                updatePlot();
+            }
+        }
+
+        function updateMultiFittingControls(id) {
+            const container = document.getElementById('multiFittingContainer');
+            container.innerHTML = `
+                <div class="form-group">
+                    <label>Function Type:</label>
+                    <select id="functionType-${id}" onchange="updateMultiEquation('${id}')">
+                        <option value="linear">Linear Fit</option>
+                        <option value="quadratic">Quadratic Fit</option>
+                        <option value="exponential">Exponential Fit</option>
+                        <option value="logarithm">Logarithm Fit</option>
+                    </select>
+                </div>
+                <div class="equation-display" id="equationDisplay-${id}">y = ax + b</div>
+                
+                <div class="section-title" style="margin-top: 20px; font-size: 14px;">Fitting Range</div>
+                <div class="fitting-range">
+                    <div class="form-group">
+                        <label>X Min:</label>
+                        <input type="number" id="xMin-${id}" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>X Max:</label>
+                        <input type="number" id="xMax-${id}" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>ΔX:</label>
+                        <input type="number" id="deltaX-${id}" step="any" value="0.1">
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="performMultiFitting('${id}')">Perform Fitting</button>
+                <button class="btn btn-danger" onclick="clearMultiFitting('${id}')">Clear Fit</button>
+            `;
+        }
+
+        function updateMultiParametersDisplay(id) {
+            const container = document.getElementById('multiParametersContainer');
+            const dataSet = multiDataSets[id];
+            
+            let tableHTML = `
+                <table class="parameters-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            if (Object.keys(dataSet.fittingParameters).length === 0) {
+                tableHTML += '<tr><td colspan="2">Please perform fitting</td></tr>';
+            } else {
+                for (let param in dataSet.fittingParameters) {
+                    const value = dataSet.fittingParameters[param];
+                    tableHTML += `<tr><td>${param}</td><td>${typeof value === 'number' ? value.toFixed(6) : value}</td></tr>`;
+                }
+            }
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function updateMultiEquation(id) {
+            const functionType = document.getElementById('functionType-' + id).value;
+            const equationDisplay = document.getElementById('equationDisplay-' + id);
+            
+            switch (functionType) {
+                case 'linear':
+                    equationDisplay.textContent = 'y = ax + b';
+                    break;
+                case 'quadratic':
+                    equationDisplay.textContent = 'y = ax² + bx + c';
+                    break;
+                case 'exponential':
+                    equationDisplay.textContent = 'y = a × exp(bx)';
+                    break;
+                case 'logarithm':
+                    equationDisplay.textContent = 'y = a × ln(x) + b';
+                    break;
+            }
+        }
+
+        function performMultiFitting(id) {
+            const dataSet = multiDataSets[id];
+            if (dataSet.dataPoints.length < 2) {
+                alert('At least 2 data points are required for fitting.');
+                return;
+            }
+
+            const functionType = document.getElementById('functionType-' + id).value;
+            let params;
+
+            try {
+                switch (functionType) {
+                    case 'linear':
+                        params = fitLinear(dataSet.dataPoints);
+                        break;
+                    case 'quadratic':
+                        params = fitQuadratic(dataSet.dataPoints);
+                        break;
+                    case 'exponential':
+                        params = fitExponential(dataSet.dataPoints);
+                        break;
+                    case 'logarithm':
+                        params = fitLogarithm(dataSet.dataPoints);
+                        break;
+                }
+
+                if (params) {
+                    dataSet.fittingParameters = params;
+                    generateMultiFittingCurve(id);
+                    updateMultiParametersDisplay(id);
+                    updatePlot();
+                }
+            } catch (error) {
+                alert('Error during fitting: ' + error.message);
+            }
+        }
+
+        function generateMultiFittingCurve(id) {
+            const dataSet = multiDataSets[id];
+            const xMin = parseFloat(document.getElementById('xMin-' + id).value) || Math.min(...dataSet.dataPoints.map(p => p.x)) - 1;
+            const xMax = parseFloat(document.getElementById('xMax-' + id).value) || Math.max(...dataSet.dataPoints.map(p => p.x)) + 1;
+            const deltaX = parseFloat(document.getElementById('deltaX-' + id).value) || 0.1;
+            
+            dataSet.fittingCurve = [];
+            const functionType = document.getElementById('functionType-' + id).value;
+            
+            for (let x = xMin; x <= xMax; x += deltaX) {
+                let y;
+                try {
+                    switch (functionType) {
+                        case 'linear':
+                            y = dataSet.fittingParameters.a * x + dataSet.fittingParameters.b;
+                            break;
+                        case 'quadratic':
+                            y = dataSet.fittingParameters.a * x * x + dataSet.fittingParameters.b * x + dataSet.fittingParameters.c;
+                            break;
+                        case 'exponential':
+                            y = dataSet.fittingParameters.a * Math.exp(dataSet.fittingParameters.b * x);
+                            break;
+                        case 'logarithm':
+                            if (x > 0) {
+                                y = dataSet.fittingParameters.a * Math.log(x) + dataSet.fittingParameters.b;
+                            } else {
+                                continue;
+                            }
+                            break;
+                    }
+                    
+                    if (!isNaN(y) && isFinite(y)) {
+                        dataSet.fittingCurve.push({x: x, y: y});
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
+        }
+
+        function clearMultiFitting(id) {
+            const dataSet = multiDataSets[id];
+            dataSet.fittingCurve = [];
+            dataSet.fittingParameters = {};
+            updateMultiParametersDisplay(id);
+            updatePlot();
+        }
+
+        function updateDataSetName(id, name) {
+            multiDataSets[id].name = name;
+            const tab = document.querySelector(`[data-id="${id}"] .tab-name`);
+            tab.textContent = name;
+            updatePlot();
+        }
+
+        function updateDataSetColor(id, color) {
+            multiDataSets[id].color = color;
+            // Also update the plot settings colors
+            multiDataSets[id].plotSettings.markerColor = color;
+            multiDataSets[id].plotSettings.curveColor = color;
+            
+            const indicator = document.querySelector(`[data-id="${id}"] .color-indicator`);
+            indicator.style.backgroundColor = color;
+            
+            // If this is the active dataset, update the plot details immediately
+            if (activeDataSetId === id) {
+                updatePlotDetailsForDataSet(id);
+            }
+            
+            updatePlot();
+        }
+
+        function toggleDataSetVisibility(id) {
+            const dataSet = multiDataSets[id];
+            dataSet.visible = !dataSet.visible;
+            const button = document.getElementById('visibility-' + id);
+            button.textContent = dataSet.visible ? 'Visible' : 'Hidden';
+            button.className = `btn btn-sm ${dataSet.visible ? 'btn-success' : 'btn-secondary'}`;
+            updatePlot();
+        }
+
+        function removeDataSet(id) {
+            if (Object.keys(multiDataSets).length === 1) {
+                alert('Cannot remove the last dataset.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to remove this dataset?')) {
+                delete multiDataSets[id];
+                
+                // Remove tab
+                document.querySelector(`[data-id="${id}"]`).remove();
+                
+                // Remove content
+                document.getElementById('content-' + id).remove();
+                
+                // Switch to another dataset if this was active
+                if (activeDataSetId === id) {
+                    const remainingIds = Object.keys(multiDataSets);
+                    if (remainingIds.length > 0) {
+                        switchDataSet(remainingIds[0]);
+                    } else {
+                        activeDataSetId = null;
+                        document.getElementById('multiFittingContainer').innerHTML = '<p>No data sets available.</p>';
+                        document.getElementById('multiParametersContainer').innerHTML = '<p>No data sets available.</p>';
+                    }
+                }
+                
+                updatePlot();
+            }
+        }
+
+        // Plotting functions with improved margin calculation
+        function calculateMargins() {
+            const labelFontSize = parseInt(document.getElementById('labelFontSize').value);
+            const tickFontSize = parseInt(document.getElementById('tickFontSize').value);
+            const xLabelDistance = parseInt(document.getElementById('xLabelDistance').value);
+            const yLabelDistance = parseInt(document.getElementById('yLabelDistance').value);
+            
+            // Calculate margins based on font sizes and label distances
+            const baseMargin = 30;
+            
+            return {
+                l: Math.max(baseMargin, yLabelDistance + labelFontSize + tickFontSize),
+                r: 30,
+                t: 30,
+                b: Math.max(baseMargin, xLabelDistance + labelFontSize + tickFontSize)
+            };
+        }
+
+        function parseRange(rangeStr) {
+            if (!rangeStr || rangeStr.trim() === '') return null;
+            try {
+                // Handle different formats: "0,100", "[0,100]", "0 100"
+                const cleanStr = rangeStr.replace(/[\[\]]/g, '').trim();
+                const parts = cleanStr.split(/[,\s]+/).map(s => parseFloat(s.trim()));
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    return [Math.min(parts[0], parts[1]), Math.max(parts[0], parts[1])];
+                }
+            } catch (e) {
+                console.warn('Error parsing range:', rangeStr, e);
+            }
+            return null;
+        }
+
+        function parseTicks(tickStr) {
+            if (!tickStr || tickStr.trim() === '') return null;
+            try {
+                const parts = tickStr.split(':').map(s => parseFloat(s.trim()));
+                if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                    const [start, step, end] = parts;
+                    if (step <= 0) return null;
+                    const ticks = [];
+                    for (let i = start; i <= end + step/2; i += step) { // Add small tolerance for floating point
+                        ticks.push(Math.round(i * 1000000) / 1000000); // Round to avoid floating point errors
+                    }
+                    return ticks.length > 0 ? ticks : null;
+                }
+            } catch (e) {
+                console.warn('Error parsing ticks:', tickStr, e);
+            }
+            return null;
+        }
+
+        function updatePlot() {
+            const traces = [];
+            
+            for (let id in multiDataSets) {
+                const dataSet = multiDataSets[id];
+                if (!dataSet.visible) continue;
+                
+                // Add data points
+                if (dataSet.dataPoints.length > 0) {
+                    const dataTrace = {
+                        x: dataSet.dataPoints.map(p => p.x),
+                        y: dataSet.dataPoints.map(p => p.y),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: dataSet.name,
+                        legendgroup: id,
+                        marker: {
+                            size: dataSet.plotSettings.markerSize,
+                            color: dataSet.plotSettings.markerColor,
+                            symbol: dataSet.plotSettings.markerStyle
+                        }
+                    };
+                    traces.push(dataTrace);
+                }
+                
+                // Add fitting curve
+                if (dataSet.fittingCurve.length > 0) {
+                    const curveTrace = {
+                        x: dataSet.fittingCurve.map(p => p.x),
+                        y: dataSet.fittingCurve.map(p => p.y),
+                        mode: 'lines',
+                        type: 'scatter',
+                        name: dataSet.name + ' (fit)',
+                        legendgroup: id,
+                        showlegend: false,
+                        line: {
+                            width: dataSet.plotSettings.curveWidth,
+                            color: dataSet.plotSettings.curveColor,
+                            dash: dataSet.plotSettings.curveStyle
+                        }
+                    };
+                    traces.push(curveTrace);
+                }
+            }
+            
+            const margins = calculateMargins();
+            const xLabelDistance = parseInt(document.getElementById('xLabelDistance').value);
+            const yLabelDistance = parseInt(document.getElementById('yLabelDistance').value);
+            
+            // Parse axis ranges with better error handling
+            const xRange = parseRange(document.getElementById('xRange').value);
+            const yRange = parseRange(document.getElementById('yRange').value);
+            
+            // Parse custom ticks with better error handling
+            const xTicks = parseTicks(document.getElementById('xTicks').value);
+            const yTicks = parseTicks(document.getElementById('yTicks').value);
+            
+            // Data box settings - always apply line width and color
+            const showDataBox = document.getElementById('showDataBox').value === 'true';
+            const dataBoxColor = document.getElementById('dataBoxColor').value;
+            const dataBoxLineWidth = parseInt(document.getElementById('dataBoxLineWidth').value);
+            
+            // Legend settings
+            const showLegend = document.getElementById('showLegend').value === 'true';
+            const legendPosition = document.getElementById('legendPosition').value;
+            const legendFontSize = parseInt(document.getElementById('legendFontSize').value);
+            
+            let legendConfig = {};
+            if (showLegend) {
+                const positions = {
+                    'top-right': { x: 1, y: 1, xanchor: 'right', yanchor: 'top' },
+                    'top-left': { x: 0, y: 1, xanchor: 'left', yanchor: 'top' },
+                    'bottom-right': { x: 1, y: 0, xanchor: 'right', yanchor: 'bottom' },
+                    'bottom-left': { x: 0, y: 0, xanchor: 'left', yanchor: 'bottom' }
+                };
+                legendConfig = {
+                    ...positions[legendPosition],
+                    font: { size: legendFontSize }
+                };
+            }
+            
+            const layout = {
+                xaxis: {
+                    title: {
+                        text: document.getElementById('xLabel').value,
+                        font: {
+                            family: document.getElementById('fontFamily').value,
+                            size: parseInt(document.getElementById('labelFontSize').value),
+                            color: document.getElementById('labelFontColor').value
+                        },
+                        standoff: xLabelDistance
+                    },
+                    tickfont: {
+                        family: document.getElementById('fontFamily').value,
+                        size: parseInt(document.getElementById('tickFontSize').value)
+                    },
+                    showgrid: document.getElementById('showGrid').value === 'true',
+                    linecolor: dataBoxColor,
+                    linewidth: dataBoxLineWidth,
+                    mirror: showDataBox ? 'allticks' : false,
+                    ticks: 'outside',
+                    showline: true,
+                    zeroline: false
+                },
+                yaxis: {
+                    title: {
+                        text: document.getElementById('yLabel').value,
+                        font: {
+                            family: document.getElementById('fontFamily').value,
+                            size: parseInt(document.getElementById('labelFontSize').value),
+                            color: document.getElementById('labelFontColor').value
+                        },
+                        standoff: yLabelDistance
+                    },
+                    tickfont: {
+                        family: document.getElementById('fontFamily').value,
+                        size: parseInt(document.getElementById('tickFontSize').value)
+                    },
+                    showgrid: document.getElementById('showGrid').value === 'true',
+                    linecolor: dataBoxColor,
+                    linewidth: dataBoxLineWidth,
+                    mirror: showDataBox ? 'allticks' : false,
+                    ticks: 'outside',
+                    showline: true,
+                    zeroline: false
+                },
+                margin: margins,
+                showlegend: showLegend,
+                legend: legendConfig,
+                plot_bgcolor: 'white',
+                paper_bgcolor: 'white'
+            };
+            
+            // Apply axis ranges if specified
+            if (xRange) {
+                layout.xaxis.range = xRange;
+                layout.xaxis.autorange = false;
+            } else {
+                layout.xaxis.autorange = true;
+            }
+            
+            if (yRange) {
+                layout.yaxis.range = yRange;
+                layout.yaxis.autorange = false;
+            } else {
+                layout.yaxis.autorange = true;
+            }
+            
+            // Apply custom ticks if specified
+            if (xTicks) {
+                layout.xaxis.tickvals = xTicks;
+                layout.xaxis.tickmode = 'array';
+            } else {
+                layout.xaxis.tickmode = 'auto';
+            }
+            
+            if (yTicks) {
+                layout.yaxis.tickvals = yTicks;
+                layout.yaxis.tickmode = 'array';
+            } else {
+                layout.yaxis.tickmode = 'auto';
+            }
+            
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                toImageButtonOptions: {
+                    format: 'png',
+                    filename: 'plot',
+                    height: parseInt(document.getElementById('plotHeight').value),
+                    width: parseInt(document.getElementById('plotWidth').value),
+                    scale: 1
+                }
+            };
+            
+            Plotly.newPlot('plotDiv', traces, layout, config);
+        }
+
+        function updatePlotSize() {
+            const width = parseInt(document.getElementById('plotWidth').value);
+            const height = parseInt(document.getElementById('plotHeight').value);
+            const margins = calculateMargins();
+            const xLabelDistance = parseInt(document.getElementById('xLabelDistance').value);
+            const yLabelDistance = parseInt(document.getElementById('yLabelDistance').value);
+            
+            // Parse axis ranges
+            const xRange = parseRange(document.getElementById('xRange').value);
+            const yRange = parseRange(document.getElementById('yRange').value);
+            
+            // Parse custom ticks
+            const xTicks = parseTicks(document.getElementById('xTicks').value);
+            const yTicks = parseTicks(document.getElementById('yTicks').value);
+            
+            const updateLayout = {
+                width: width,
+                height: height,
+                margin: margins,
+                'xaxis.title.standoff': xLabelDistance,
+                'yaxis.title.standoff': yLabelDistance,
+                'xaxis.range': xRange,
+                'yaxis.range': yRange,
+                'xaxis.tickvals': xTicks,
+                'yaxis.tickvals': yTicks,
+                'xaxis.linecolor': document.getElementById('showDataBox').value === 'true' ? document.getElementById('dataBoxColor').value : '#000000',
+                'yaxis.linecolor': document.getElementById('showDataBox').value === 'true' ? document.getElementById('dataBoxColor').value : '#000000',
+                'xaxis.linewidth': document.getElementById('showDataBox').value === 'true' ? parseInt(document.getElementById('dataBoxLineWidth').value) : 1,
+                'yaxis.linewidth': document.getElementById('showDataBox').value === 'true' ? parseInt(document.getElementById('dataBoxLineWidth').value) : 1,
+                'xaxis.mirror': document.getElementById('showDataBox').value === 'true' ? true : false,
+                'yaxis.mirror': document.getElementById('showDataBox').value === 'true' ? true : false
+            };
+            
+            Plotly.relayout('plotDiv', updateLayout);
+        }
+
+        // Download function
+        function downloadPlot() {
+            const format = document.getElementById('imageFormat').value;
+            const width = parseInt(document.getElementById('plotWidth').value);
+            const height = parseInt(document.getElementById('plotHeight').value);
+            
+            const config = {
+                format: format,
+                width: width,
+                height: height,
+                scale: 2 // Higher resolution
+            };
+            
+            Plotly.downloadImage('plotDiv', config).then(function() {
+                console.log('Plot downloaded successfully');
+            }).catch(function(error) {
+                console.error('Error downloading plot:', error);
+                alert('Error downloading plot. Please try again.');
+            });
+        }
+
+        function saveMultiState() {
+            const state = {
+                dataSets: JSON.parse(JSON.stringify(multiDataSets)),
+                activeDataSetId: activeDataSetId
+            };
+            
+            multiUndoStack.push(state);
+            if (multiUndoStack.length > MAX_UNDO_STACK) {
+                multiUndoStack.shift();
+            }
+        }
+
+        function undoMultiLastAction() {
+            if (multiUndoStack.length === 0) {
+                alert('No actions to undo');
+                return;
+            }
+            
+            const state = multiUndoStack.pop();
+            multiDataSets = state.dataSets;
+            activeDataSetId = state.activeDataSetId;
+            
+            // Rebuild the UI
+            rebuildMultiDataUI();
+            updatePlot();
+        }
+
+        function clearAllMultiData() {
+            if (confirm('Are you sure you want to clear all data sets?')) {
+                saveMultiState();
+                multiDataSets = {};
+                activeDataSetId = null;
+                
+                // Clear UI
+                document.getElementById('dataTabs').innerHTML = '<button class="add-data-tab" onclick="addDataSet()">+ Add Data</button>';
+                document.getElementById('multiDataContainers').innerHTML = '';
+                document.getElementById('multiFittingContainer').innerHTML = '<p>No data sets available.</p>';
+                document.getElementById('multiParametersContainer').innerHTML = '<p>No data sets available.</p>';
+                
+                updatePlot();
+            }
+        }
+
+        function rebuildMultiDataUI() {
+            // Clear existing UI
+            document.getElementById('dataTabs').innerHTML = '<button class="add-data-tab" onclick="addDataSet()">+ Add Data</button>';
+            document.getElementById('multiDataContainers').innerHTML = '';
+            
+            // Rebuild from data
+            for (let id in multiDataSets) {
+                const dataSet = multiDataSets[id];
+                createDataTab(id, dataSet.name, dataSet.color);
+                createDataContent(id, dataSet.name);
+                
+                // Populate data table
+                const tbody = document.getElementById('tbody-' + id);
+                tbody.innerHTML = '';
+                
+                // Add data rows
+                for (let i = 0; i < Math.max(dataSet.dataPoints.length + 5, 10); i++) {
+                    addMultiDataRow(id);
+                }
+                
+                // Fill with data
+                const rows = tbody.getElementsByTagName('tr');
+                dataSet.dataPoints.forEach((point, index) => {
+                    if (index < rows.length) {
+                        const inputs = rows[index].getElementsByTagName('input');
+                        inputs[0].value = point.x;
+                        inputs[1].value = point.y;
+                    }
+                });
+                
+                attachMultiInputEventListeners(id);
+            }
+            
+            // Switch to active dataset
+            if (activeDataSetId && multiDataSets[activeDataSetId]) {
+                switchDataSet(activeDataSetId);
+            } else if (Object.keys(multiDataSets).length > 0) {
+                switchDataSet(Object.keys(multiDataSets)[0]);
+            }
+        }
+
+        // Shared fitting functions
+        function fitLinear(dataPoints) {
+            const n = dataPoints.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            
+            for (let point of dataPoints) {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumX2 += point.x * point.x;
+            }
+            
+            const a = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const b = (sumY - a * sumX) / n;
+            
+            return {a: a, b: b};
+        }
+
+        function fitQuadratic(dataPoints) {
+            const n = dataPoints.length;
+            if (n < 3) {
+                throw new Error('At least 3 points are required for quadratic fitting.');
+            }
+            
+            // Matrix setup for quadratic fitting: y = ax² + bx + c
+            let matrix = [
+                [0, 0, 0, 0],  // [∑x⁴, ∑x³, ∑x², ∑x²y]
+                [0, 0, 0, 0],  // [∑x³, ∑x², ∑x, ∑xy]
+                [0, 0, 0, 0]   // [∑x², ∑x, n, ∑y]
+            ];
+            
+            for (let point of dataPoints) {
+                const x = point.x;
+                const y = point.y;
+                const x2 = x * x;
+                const x3 = x2 * x;
+                const x4 = x3 * x;
+                
+                matrix[0][0] += x4;
+                matrix[0][1] += x3;
+                matrix[0][2] += x2;
+                matrix[0][3] += x2 * y;
+                
+                matrix[1][0] += x3;
+                matrix[1][1] += x2;
+                matrix[1][2] += x;
+                matrix[1][3] += x * y;
+                
+                matrix[2][0] += x2;
+                matrix[2][1] += x;
+                matrix[2][2] += 1;
+                matrix[2][3] += y;
+            }
+            
+            // Gaussian elimination
+            const result = gaussianElimination(matrix);
+            return {a: result[0], b: result[1], c: result[2]};
+        }
+
+        function gaussianElimination(matrix) {
+            const n = matrix.length;
+            
+            // Forward elimination
+            for (let i = 0; i < n; i++) {
+                // Find pivot
+                let maxRow = i;
+                for (let k = i + 1; k < n; k++) {
+                    if (Math.abs(matrix[k][i]) > Math.abs(matrix[maxRow][i])) {
+                        maxRow = k;
+                    }
+                }
+                
+                // Swap rows
+                [matrix[i], matrix[maxRow]] = [matrix[maxRow], matrix[i]];
+                
+                // Make all rows below this one 0 in current column
+                for (let k = i + 1; k < n; k++) {
+                    const factor = matrix[k][i] / matrix[i][i];
+                    for (let j = i; j <= n; j++) {
+                        if (i === j) {
+                            matrix[k][j] = 0;
+                        } else {
+                            matrix[k][j] -= factor * matrix[i][j];
+                        }
+                    }
+                }
+            }
+            
+            // Back substitution
+            const solution = new Array(n);
+            for (let i = n - 1; i >= 0; i--) {
+                solution[i] = matrix[i][n];
+                for (let j = i + 1; j < n; j++) {
+                    solution[i] -= matrix[i][j] * solution[j];
+                }
+                solution[i] /= matrix[i][i];
+            }
+            
+            return solution;
+        }
+
+        function fitExponential(dataPoints) {
+            // Filter positive y values and transform: ln(y) = ln(a) + bx
+            const validPoints = dataPoints.filter(p => p.y > 0);
+            if (validPoints.length < 2) {
+                throw new Error('Exponential fitting requires positive y values.');
+            }
+            
+            const transformedPoints = validPoints.map(p => ({
+                x: p.x,
+                y: Math.log(p.y)
+            }));
+            
+            const n = transformedPoints.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            
+            for (let point of transformedPoints) {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumX2 += point.x * point.x;
+            }
+            
+            const b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const lnA = (sumY - b * sumX) / n;
+            const a = Math.exp(lnA);
+            
+            return {a: a, b: b};
+        }
+
+        function fitLogarithm(dataPoints) {
+            // Filter positive x values and transform: y = a*ln(x) + b
+            const validPoints = dataPoints.filter(p => p.x > 0);
+            if (validPoints.length < 2) {
+                throw new Error('Logarithm fitting requires positive x values.');
+            }
+            
+            const transformedPoints = validPoints.map(p => ({
+                x: Math.log(p.x),
+                y: p.y
+            }));
+            
+            const n = transformedPoints.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            
+            for (let point of transformedPoints) {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumX2 += point.x * point.x;
+            }
+            
+            const a = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const b = (sumY - a * sumX) / n;
+            
+            return {a: a, b: b};
+        }
+
+        // Save All Data function - Excel format with multiple sheets
+        function saveAllData() {
+            if (Object.keys(multiDataSets).length === 0) {
+                alert('No data sets to save.');
+                return;
+            }
+
+            // Create a new workbook
+            const workbook = XLSX.utils.book_new();
+            const dataSetIds = Object.keys(multiDataSets);
+            
+            console.log('Saving data for datasets:', dataSetIds); // Debug log
+            
+            for (let i = 0; i < dataSetIds.length; i++) {
+                const id = dataSetIds[i];
+                const dataSet = multiDataSets[id];
+                
+                console.log(`Processing dataset ${id}:`, dataSet); // Debug log
+                
+                // Prepare data for the worksheet
+                const worksheetData = [];
+                
+                // Add header row
+                worksheetData.push(['Data X', 'Data Y', 'Fitted X', 'Fitted Y']);
+                
+                // Find the maximum length between data points and fitting curve
+                const maxDataLength = dataSet.dataPoints.length;
+                const maxFitLength = dataSet.fittingCurve.length;
+                const maxLength = Math.max(maxDataLength, maxFitLength);
+                
+                console.log(`Dataset ${dataSet.name}: ${maxDataLength} data points, ${maxFitLength} fit points`); // Debug log
+                
+                // Add data rows
+                for (let j = 0; j < maxLength; j++) {
+                    const row = [];
+                    
+                    // Add data points (A and B columns)
+                    if (j < dataSet.dataPoints.length) {
+                        row.push(dataSet.dataPoints[j].x);
+                        row.push(dataSet.dataPoints[j].y);
+                    } else {
+                        row.push('');
+                        row.push('');
+                    }
+                    
+                    // Add fitting curve (C and D columns)
+                    if (j < dataSet.fittingCurve.length) {
+                        row.push(dataSet.fittingCurve[j].x);
+                        row.push(dataSet.fittingCurve[j].y);
+                    } else {
+                        row.push('');
+                        row.push('');
+                    }
+                    
+                    worksheetData.push(row);
+                }
+                
+                // Create worksheet from data
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+                
+                // Set column widths for better readability
+                worksheet['!cols'] = [
+                    { wch: 12 }, // Data X
+                    { wch: 12 }, // Data Y
+                    { wch: 12 }, // Fitted X
+                    { wch: 12 }  // Fitted Y
+                ];
+                
+                // Create a clean sheet name (remove special characters)
+                let sheetName = dataSet.name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+                if (sheetName.length > 31) { // Excel sheet name limit
+                    sheetName = sheetName.substring(0, 31);
+                }
+                if (sheetName === '') {
+                    sheetName = `Sheet${i + 1}`;
+                }
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            }
+            
+            // Generate Excel file and download
+            try {
+                // Create filename with timestamp
+                const now = new Date();
+                const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+                const filename = `all_datasets_${timestamp}.xlsx`;
+                
+                // Write and download the file
+                XLSX.writeFile(workbook, filename);
+                
+                alert(`Successfully saved ${dataSetIds.length} dataset(s) to Excel file with separate sheets.`);
+            } catch (error) {
+                console.error('Error saving Excel file:', error);
+                alert('Error saving Excel file. Please try again.');
+            }
+        }
+
+        // Legacy CSV function (keeping for backup)
+        function saveAllDataCSV() {
+            if (Object.keys(multiDataSets).length === 0) {
+                alert('No data sets to save.');
+                return;
+            }
+
+            let csvContent = '';
+            const dataSetIds = Object.keys(multiDataSets);
+            
+            for (let i = 0; i < dataSetIds.length; i++) {
+                const id = dataSetIds[i];
+                const dataSet = multiDataSets[id];
+                
+                // Add dataset header
+                csvContent += `"Dataset: ${dataSet.name}"\n`;
+                csvContent += 'Data X,Data Y,Fitted X,Fitted Y\n';
+                
+                // Find the maximum length between data points and fitting curve
+                const maxDataLength = dataSet.dataPoints.length;
+                const maxFitLength = dataSet.fittingCurve.length;
+                const maxLength = Math.max(maxDataLength, maxFitLength);
+                
+                // Add data rows
+                for (let j = 0; j < maxLength; j++) {
+                    let row = '';
+                    
+                    // Add data points (A and B columns)
+                    if (j < dataSet.dataPoints.length) {
+                        row += `${dataSet.dataPoints[j].x},${dataSet.dataPoints[j].y}`;
+                    } else {
+                        row += ',';
+                    }
+                    
+                    row += ',';
+                    
+                    // Add fitting curve (C and D columns)
+                    if (j < dataSet.fittingCurve.length) {
+                        row += `${dataSet.fittingCurve[j].x},${dataSet.fittingCurve[j].y}`;
+                    } else {
+                        row += ',';
+                    }
+                    
+                    csvContent += row + '\n';
+                }
+                
+                // Add empty line between datasets (except for the last one)
+                if (i < dataSetIds.length - 1) {
+                    csvContent += '\n';
+                }
+            }
+            
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                
+                // Create filename with timestamp
+                const now = new Date();
+                const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+                link.setAttribute('download', `all_datasets_${timestamp}.csv`);
+                
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert(`Successfully saved ${dataSetIds.length} dataset(s) to CSV file.`);
+            } else {
+                alert('Your browser does not support file downloads.');
+            }
+        }
+
+        // Alternative function to save as separate CSV files for each dataset
+        function saveAllDataSeparate() {
+            if (Object.keys(multiDataSets).length === 0) {
+                alert('No data sets to save.');
+                return;
+            }
+
+            const downloadNext = (index, dataSetIds) => {
+                if (index >= dataSetIds.length) return;
+                
+                const id = dataSetIds[index];
+                const dataSet = multiDataSets[id];
+                let csvContent = '';
+                
+                // Add header
+                csvContent += 'Data X,Data Y,Fitted X,Fitted Y\n';
+                
+                // Find the maximum length between data points and fitting curve
+                const maxDataLength = dataSet.dataPoints.length;
+                const maxFitLength = dataSet.fittingCurve.length;
+                const maxLength = Math.max(maxDataLength, maxFitLength);
+                
+                // Add data rows
+                for (let i = 0; i < maxLength; i++) {
+                    let row = '';
+                    
+                    // Add data points (A and B columns)
+                    if (i < dataSet.dataPoints.length) {
+                        row += `${dataSet.dataPoints[i].x},${dataSet.dataPoints[i].y}`;
+                    } else {
+                        row += ',';
+                    }
+                    
+                    row += ',';
+                    
+                    // Add fitting curve (C and D columns)
+                    if (i < dataSet.fittingCurve.length) {
+                        row += `${dataSet.fittingCurve[i].x},${dataSet.fittingCurve[i].y}`;
+                    } else {
+                        row += ',';
+                    }
+                    
+                    csvContent += row + '\n';
+                }
+                
+                // Create and download the file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `${dataSet.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Small delay between downloads to avoid browser issues
+                    setTimeout(() => {
+                        downloadNext(index + 1, dataSetIds);
+                    }, 100);
+                } else {
+                    alert('Your browser does not support file downloads.');
+                }
+            };
+            
+            const dataSetIds = Object.keys(multiDataSets);
+            downloadNext(0, dataSetIds);
+        }
+    </script>
+</body>
+</html>

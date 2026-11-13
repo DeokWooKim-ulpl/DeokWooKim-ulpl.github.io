@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Circular Aperture Diffraction</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      max-width: 1800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .controls, .advanced-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      flex: 1 1 220px;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .plots {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .plots-row2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    #plot3d, #apertureShape, #contourPlot, #projectionPlot {
+      height: 500px;
+    }
+    .error-message {
+      color: red;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    .info-message {
+      color: #666;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+    .calculation-info {
+      background-color: #e8f4fd;
+      border: 1px solid #bee5eb;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fraunhofer diffraction pattern calculator: Circular aperture</h1>
+  <h2>(Far-field-diffraction pattern with circular aperture geometry)</h2>
+
+  <div class="calculation-info">
+    <strong>Theory:</strong> The diffraction pattern for a circular aperture is given by the Airy pattern: 
+    I(θ) = I₀ [2J₁(ka sin θ)/(ka sin θ)]², where J₁ is the first-order Bessel function, k = 2π/λ, and a is the radius.
+    <br><strong>First dark ring:</strong> At radius θ ≈ 1.22λ/2a from the center.
+  </div>
+
+<div class="controls">
+  <div class="input-group">
+    <label for="radius">Aperture Radius [mm]</label>
+    <input type="number" id="radius" value="0.5" min="0.1" step="0.1">
+    <div id="radiusError" class="error-message"></div>
+    <div id="radiusInfo" class="info-message">Diameter: 2.0 mm</div>
+  </div>
+  <div class="input-group">
+    <label for="lambda">Wavelength (λ) [nm]</label>
+    <input type="number" id="lambda" value="632.8">
+    <div id="airyInfo" class="info-message">First dark ring at: 0.77 mm</div>
+  </div>
+  <div class="input-group">
+    <label for="screen">Screen Distance from aperture (z) [m]</label>
+    <input type="number" id="screen" value="1" step="0.1">
+  </div>
+
+</div>
+
+<div class="advanced-controls">
+  <div class="input-group">
+    <label for="viewAngle">3D View Angle (polar,azim)</label>
+    <input type="text" id="viewAngle" value="45,45">
+  </div>
+  <div class="input-group">
+    <label for="range">X-Y Range [cm]</label>
+    <input type="number" id="range" value="0.3" >
+  </div>
+  <div class="input-group">
+    <label for="res">Resolution (Num. of points per axis)</label>
+    <input type="number" id="res" value="150">
+  </div>
+  <div class="input-group">
+    <label for="samplingDensity">Sampling Density (for numerical integration)</label>
+    <input type="number" id="samplingDensity" value="30" min="10" max="100">
+    <div class="info-message">Higher values = more accurate but slower</div>
+  </div>
+  <div class="input-group">
+    <label for="intensityScale">Intensity Scale</label>
+    <select id="intensityScale">
+      <option value="linear">Linear</option>
+      <option value="gamma" selected>Gamma (γ=0.5)</option>
+      </select>
+    <div class="info-message">Gamma enhances weak diffraction features</div>
+  </div>
+  <div class="input-group">
+    <label for="colormap">Colormap</label>
+    <select id="colormap">
+      <option value="Rainbow" selected>Rainbow</option>
+      <option value="Viridis">Viridis</option>
+      <option value="Plasma">Plasma</option>
+      <option value="Hot">Hot</option>
+      <option value="Jet">Jet</option>
+      <option value="Turbo">Turbo</option>
+    </select>
+  </div>
+</div>
+
+<div class="input-group">
+  <label for="exportSelect">Export simulated data</label>
+  <select id="exportSelect">
+    <option value="xy">X-Y Grid</option>
+    <option value="intensity">Intensity Map</option>
+    <option value="projection">X-axis Projection</option>
+    <option value="parameters">Aperture Parameters</option>
+  </select>
+  <button onclick="downloadData()">Export (.csv)</button>
+</div>
+
+<div class="plots">
+  <div id="plot3d"></div>
+  <div id="apertureShape"></div>
+</div>
+
+<div class="plots-row2">
+  <div id="contourPlot"></div>
+  <div id="projectionPlot"></div>
+</div>
+
+<script>
+// Bessel function J1 approximation using series expansion (kept for reference)
+function besselJ1(x) {
+  if (Math.abs(x) < 1e-8) return x / 2;
+  
+  let result = 0;
+  let term = x / 2;
+  let sign = 1;
+  
+  for (let n = 0; n < 50; n++) {
+    result += sign * term;
+    term *= (x * x) / (4 * (n + 1) * (n + 2));
+    sign *= -1;
+    
+    if (Math.abs(term) < 1e-12) break;
+  }
+  
+  return result;
+}
+
+// Airy pattern intensity function (kept for reference)
+function airyPattern(r, radius, lambda, z) {
+  const k = 2 * Math.PI / lambda;
+  const theta = r / z; // Small angle approximation: sin(theta) ≈ theta for small angles
+  const beta = k * radius * theta;
+  
+  if (Math.abs(beta) < 1e-8) return 1;
+  
+  const j1_beta = besselJ1(beta);
+  const airy = 2 * j1_beta / beta;
+  return airy * airy;
+}
+
+let xVals = [], yVals = [], zVals = [];
+let radialProfile = [];
+let xProjection = []; // For x-axis projection
+
+function updateApertureInfo() {
+  const radius = parseFloat(document.getElementById("radius").value);
+  const lambda = parseFloat(document.getElementById("lambda").value) * 1e-9;
+  const z = parseFloat(document.getElementById("screen").value);
+  
+  if (isNaN(radius) || radius <= 0) {
+    document.getElementById("radiusError").textContent = "Radius must be positive";
+    return false;
+  }
+  
+  document.getElementById("radiusError").textContent = "";
+  document.getElementById("radiusInfo").textContent = `Diameter: ${(radius * 2).toFixed(2)} mm`;
+  
+  // Calculate first dark ring position
+  const firstDarkRing = 1.22 * lambda * z / (2 * radius * 1e-3) * 1000; // in mm
+  document.getElementById("airyInfo").textContent = `First dark ring at: ${firstDarkRing.toFixed(2)} mm`;
+  
+  return true;
+}
+
+function updateApertureShape() {
+  const radius = parseFloat(document.getElementById("radius").value);
+  
+  if (!updateApertureInfo()) {
+    return false;
+  }
+  
+  // Create circle for aperture visualization
+  const theta = [];
+  const circleX = [], circleY = [];
+  
+  for (let i = 0; i <= 100; i++) {
+    const angle = (2 * Math.PI * i) / 100;
+    theta.push(angle);
+    circleX.push(radius * Math.cos(angle));
+    circleY.push(radius * Math.sin(angle));
+  }
+  
+  const maxCoord = radius * 1.5;
+  
+  Plotly.newPlot("apertureShape", [
+    {
+      x: circleX,
+      y: circleY,
+      mode: 'lines',
+      line: { color: 'blue', width: 3 },
+      name: 'Aperture',
+      fill: 'tonexty',
+      fillcolor: 'rgba(0,100,255,0.2)'
+    },
+    {
+      x: [0],
+      y: [0],
+      mode: 'markers',
+      marker: { size: 8, color: 'red', symbol: 'x' },
+      name: 'Center'
+    }
+  ], {
+    title: `Circular Aperture (R=${radius}mm)`,
+    xaxis: { 
+      title: "x [mm]", 
+      range: [-maxCoord, maxCoord],
+      scaleanchor: "y",
+      scaleratio: 1,
+      zeroline: true,
+      zerolinecolor: 'gray',
+      zerolinewidth: 1
+    },
+    yaxis: { 
+      title: "y [mm]", 
+      range: [-maxCoord, maxCoord],
+      zeroline: true,
+      zerolinecolor: 'gray',
+      zerolinewidth: 1
+    },
+    showlegend: false
+  });
+  
+  return true;
+}
+
+function isPointInCircle(x, y, radius) {
+  return (x * x + y * y) <= (radius * radius);
+}
+
+function calculateNumericalIntegration(xi, yj, radius, lambda, z, samplingDensity) {
+  const kx = 2 * Math.PI * xi / (lambda * z);
+  const ky = 2 * Math.PI * yj / (lambda * z);
+  
+  let realPart = 0, imagPart = 0;
+  let sampleCount = 0;
+  
+  const step = (2 * radius) / samplingDensity;
+  
+  for (let si = 0; si <= samplingDensity; si++) {
+    for (let sj = 0; sj <= samplingDensity; sj++) {
+      const sx = -radius + si * step;
+      const sy = -radius + sj * step;
+      
+      if (isPointInCircle(sx, sy, radius)) {
+        const phase = kx * sx + ky * sy;
+        realPart += Math.cos(phase);
+        imagPart += Math.sin(phase);
+        sampleCount++;
+      }
+    }
+  }
+  
+  if (sampleCount > 0) {
+    realPart /= sampleCount;
+    imagPart /= sampleCount;
+  }
+  
+  const area = Math.PI * radius * radius;
+  return (realPart * realPart + imagPart * imagPart) * area;
+}
+
+function updatePlot() {
+  if (!updateApertureShape()) {
+    return;
+  }
+  
+  const radius = parseFloat(document.getElementById("radius").value) * 1e-3; // Convert to meters
+  const lambda = parseFloat(document.getElementById("lambda").value) * 1e-9;
+  const z = parseFloat(document.getElementById("screen").value);
+  const range = parseFloat(document.getElementById("range").value) / 100;
+  const res = parseInt(document.getElementById("res").value);
+  const samplingDensity = parseInt(document.getElementById("samplingDensity").value);
+  const angle = document.getElementById("viewAngle").value.split(',').map(Number);
+
+  const dx = (2 * range) / res;
+  xVals = [], yVals = [], zVals = [];
+  radialProfile = [];
+  let maxI = 0;
+
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    xVals.push(xi * 100);
+  }
+  for (let j = 0; j < res; j++) {
+    const yj = -range + j * dx;
+    yVals.push(yj * 100);
+  }
+
+  // Calculate diffraction pattern using numerical integration only
+  const centerIdx = Math.floor(res / 2);
+  
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    let row = [];
+    for (let j = 0; j < res; j++) {
+      const yj = -range + j * dx;
+      
+      const I = calculateNumericalIntegration(xi, yj, radius, lambda, z, samplingDensity);
+      
+      row.push(I);
+      maxI = Math.max(maxI, I);
+    }
+    zVals.push(row);
+  }
+
+  // Calculate projections and radial profile
+  xProjection = [];
+  radialProfile = [];
+  
+  // X-axis projection (take values along y=0 line)
+  for (let i = 0; i < res; i++) {
+    const x = xVals[i];
+    const intensity = zVals[i][centerIdx];
+    xProjection.push([x, intensity]);
+  }
+  
+  // Radial profile from center
+  for (let i = 0; i < centerIdx; i++) {
+    const r = i * dx * 100; // in cm
+    const I = zVals[centerIdx][centerIdx + i];
+    radialProfile.push([r, I]);
+  }
+
+  // Apply intensity scaling
+  const intensityScale = document.getElementById("intensityScale").value;
+  const colormap = document.getElementById("colormap").value;
+  
+  if (maxI > 0) {
+    for (let i = 0; i < res; i++) {
+      for (let j = 0; j < res; j++) {
+        let normalizedI = zVals[i][j] / maxI;
+        
+        switch(intensityScale) {
+          case 'log':
+            normalizedI = Math.log10(normalizedI + 1e-6) / Math.log10(1 + 1e-6);
+            break;
+          case 'gamma':
+            normalizedI = Math.pow(normalizedI, 0.5);
+            break;
+          case 'sqrt':
+            normalizedI = Math.sqrt(normalizedI);
+            break;
+          case 'linear':
+          default:
+            break;
+        }
+        
+        zVals[i][j] = Math.max(0, normalizedI);
+      }
+    }
+  }
+
+  const surfaceData = {
+    z: zVals, x: xVals, y: yVals,
+    type: "surface", 
+    colorscale: colormap, 
+    showscale: true,
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  };
+
+  Plotly.newPlot("plot3d", [surfaceData], {
+    title: "Airy Diffraction Pattern (3D) - Numerical Integration",
+    scene: {
+      xaxis: { title: "x [cm]" },
+      yaxis: { title: "y [cm]" },
+      zaxis: { title: "Intensity" },
+      camera: {
+        eye: {
+          x: Math.cos(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          y: Math.sin(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          z: Math.cos(angle[0]*Math.PI/180)
+        }
+      }
+    }
+  });
+
+  Plotly.newPlot("contourPlot", [{
+    z: zVals, x: xVals, y: yVals,
+    type: "contour",
+    colorscale: colormap,
+    contours: { 
+      coloring: "heatmap",
+      start: 0,
+      end: 1,
+      size: 0.05
+    },
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  }], {
+    title: "Airy Pattern (2D contour plot)",
+    xaxis: { title: "x [cm]" },
+    yaxis: { title: "y [cm]" }
+  });
+
+  // Create X-axis projection plot
+  const xProjValues = xProjection.map(p => p[1]);
+  const xProjMaxScaled = Math.max(...xProjValues);
+  const scaledXProjection = xProjection.map(([x, I]) => [x, xProjMaxScaled > 0 ? I / xProjMaxScaled : 0]);
+  
+  Plotly.newPlot("projectionPlot", [{
+    x: scaledXProjection.map(p => p[0]),
+    y: scaledXProjection.map(p => p[1]),
+    type: "scatter",
+    mode: "lines",
+    name: "X-axis projection",
+    line: { color: "blue", width: 2 }
+  }], {
+    title: "Diffraction Pattern - X-axis Projection",
+    xaxis: { title: "x [cm]" },
+    yaxis: { title: "Normalized Intensity" },
+    showlegend: false
+  });
+}
+
+function downloadData() {
+  const type = document.getElementById("exportSelect").value;
+  const radius = parseFloat(document.getElementById("radius").value);
+  const lambda = parseFloat(document.getElementById("lambda").value);
+  const z = parseFloat(document.getElementById("screen").value);
+  let csv = "";
+  
+  if (type === "xy") {
+    csv = "x[cm],y[cm]\n";
+    xVals.forEach(x => yVals.forEach(y => csv += `${x},${y}\n`));
+  } else if (type === "intensity") {
+    csv = "x/y," + yVals.join(",") + "\n";
+    xVals.forEach((x, i) => {
+      csv += x + "," + zVals[i].join(",") + "\n";
+    });
+  } else if (type === "projection") {
+    csv = "x[cm],intensity\n";
+    xProjection.forEach(([x, I]) => {
+      csv += `${x},${I}\n`;
+    });
+  } else if (type === "radial") {
+    csv = "radius[cm],intensity\n";
+    radialProfile.forEach(([r, I]) => {
+      csv += `${r},${I}\n`;
+    });
+  } else if (type === "parameters") {
+    csv = "parameter,value,unit\n";
+    csv += `aperture_radius,${radius},mm\n`;
+    csv += `wavelength,${lambda},nm\n`;
+    csv += `screen_distance,${z},m\n`;
+    csv += `first_dark_ring,${(1.22 * lambda * 1e-9 * z / (2 * radius * 1e-3) * 1000).toFixed(3)},mm\n`;
+  }
+  
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `circular_aperture_${type}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+["radius", "lambda", "screen", "range", "res", "viewAngle", "samplingDensity", "intensityScale", "colormap"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updatePlot)
+);
+
+updatePlot();
+</script>
+</body>
+</html>

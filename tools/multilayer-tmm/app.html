@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilayer Optical Calculator</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* General Styling (Unchanged) */
+        :root {
+            --primary-bg: #f8f9fa;
+            --secondary-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-color: #212529;
+            --gray-text: #6c757d;
+            --accent-color: #6c757d;
+            --accent-color-light: #e9ecef;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            line-height: 1.6;
+        }
+
+        #calculator-container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: var(--secondary-bg);
+            padding: clamp(15px, 4vw, 30px);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 25px;
+        }
+        h1 {
+            font-size: clamp(22px, 5vw, 28px);
+            font-weight: 600;
+        }
+        h2 {
+            font-size: clamp(18px, 4vw, 22px);
+            font-weight: 500;
+            margin-top: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--gray-text);
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--primary-bg);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px var(--accent-color-light);
+        }
+
+        #layers-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .layer {
+            display: grid;
+            grid-template-columns: auto 1fr 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--primary-bg);
+        }
+        
+        @media (max-width: 600px) {
+            .layer {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+            .layer .layer-label {
+                grid-column: 1 / -1;
+                margin-bottom: 0;
+            }
+        }
+
+        .layer-label {
+            font-weight: 600;
+        }
+        
+        .delete-layer-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        .delete-layer-btn:hover {
+            color: var(--danger-hover);
+        }
+
+        .controls, .layer-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .calc-btn, .layer-btn {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .calc-btn:active, .layer-btn:active {
+            transform: scale(0.98);
+        }
+
+        #calculate-btn {
+            background-color: var(--accent-color);
+            color: white;
+            flex-grow: 1;
+        }
+        #calculate-btn:hover {
+            background-color: #5a6268;
+        }
+        .layer-btn {
+            background-color: var(--accent-color-light);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .layer-btn:hover {
+             background-color: #d3d9df;
+        }
+        
+        #output-section {
+            margin-top: 30px;
+            visibility: hidden;
+        }
+        #plot-container {
+            margin-bottom: 20px;
+            min-height: 400px;
+        }
+
+        /* Theory Section Styling */
+        .theory-section {
+            margin-top: 40px;
+            padding: 30px;
+            background-color: var(--primary-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .theory-section h2 {
+            color: var(--text-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        .theory-section h3 {
+            color: var(--gray-text);
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .theory-section p {
+            text-align: justify;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .equation {
+            background-color: var(--secondary-bg);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        .math-inline {
+            font-family: 'Courier New', monospace;
+            background-color: var(--accent-color-light);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .definition-box {
+            background-color: var(--secondary-bg);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .definition-box h4 {
+            margin-top: 0;
+            color: var(--accent-color);
+            font-size: 16px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="calculator-container">
+    <h1>Multilayer Reflectance/Transmittance Calculator</h1>
+
+    <h2>Global Parameters</h2>
+    <div class="input-grid">
+        <div class="input-group">
+            <label for="n_inc">Incident Medium (n)</label>
+            <input type="number" id="n_inc" value="2" step="0.01">
+        </div>
+        <div class="input-group">
+            <label for="n_sub">Substrate (n)</label>
+            <input type="number" id="n_sub" value="1.7" step="0.01">
+        </div>
+        <div class="input-group">
+            <label for="lambda">Wavelength (nm)</label>
+            <input type="number" id="lambda" value="632.8" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="polarization">Polarization</label>
+            <select id="polarization">
+                <option value="TE">TE (s-pol)</option>
+                <option value="TM">TM (p-pol)</option>
+            </select>
+        </div>
+    </div>
+    <div class="input-grid">
+        <div class="input-group">
+            <label for="angle_start">Start Angle (°)</label>
+            <input type="number" id="angle_start" value="0" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="angle_end">Final Angle (°)</label>
+            <input type="number" id="angle_end" value="90" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="angle_step">Angle Step (°)</label>
+            <input type="number" id="angle_step" value="0.1" step="0.1">
+        </div>
+    </div>
+
+    <h2>Layers</h2>
+    <div id="layers-container">
+        </div>
+    <div class="layer-controls">
+        <button class="layer-btn" id="add-layer-btn">Add Layer</button>
+    </div>
+
+    <div class="controls">
+        <button class="calc-btn" id="calculate-btn">Calculate</button>
+    </div>
+
+    <div id="output-section">
+        <h2>Results</h2>
+        <div id="plot-container">
+            <div id="result-plot"></div>
+        </div>
+        <div class="controls">
+             <button class="layer-btn" id="export-btn">Export Data (.txt)</button>
+        </div>
+    </div>
+
+    <!-- Theory Section -->
+    <div class="theory-section">
+        <h2>Theory: Transfer Matrix Method</h2>
+        
+        <p>
+            The Transfer Matrix Method (TMM) calculates optical properties of multilayer systems by relating electric and magnetic field 
+            amplitudes using 2×2 matrices. This approach enables precise computation of reflectance and transmittance for stratified 
+            media with multiple layers.
+        </p>
+
+        <h3>Mathematical Formulation</h3>
+        
+        <p>For each layer, the characteristic matrix relates field amplitudes:</p>
+
+        <div class="equation">
+C_i = [cos(δ_i)      i*sin(δ_i)/u_i]
+      [i*u_i*sin(δ_i)    cos(δ_i)   ]
+        </div>
+
+        <p>Where the phase thickness is: <span class="math-inline">δ_i = (2π/λ) * n_i * d_i * cos(θ_i)</span></p>
+
+        <p>The optical admittance depends on polarization:</p>
+        <div class="definition-box">
+            <ul>
+                <li><strong>TE (s-polarized):</strong> <span class="math-inline">u_i = n_i * cos(θ_i)</span></li>
+                <li><strong>TM (p-polarized):</strong> <span class="math-inline">u_i = n_i / cos(θ_i)</span></li>
+            </ul>
+        </div>
+
+        <h3>Reflection and Transmission</h3>
+        
+        <p>The total transfer matrix for the multilayer system: <span class="math-inline">M = C_1 * C_2 * ... * C_L</span></p>
+        
+        <p>From which the reflection and transmission coefficients are obtained:</p>
+        <div class="equation">
+r = (u_0*M_11 - M_21) / (u_0*M_11 + M_21)
+t = 2*u_0 / (u_0*M_11 + M_21)
+        </div>
+
+        <p>Finally, the measurable quantities are:</p>
+        <div class="equation">
+Reflectance: R = |r|²
+Transmittance: T = (u_substrate/u_incident) * |t|²
+        </div>
+
+        <p>
+            This method properly handles complex refractive indices and evanescent waves when total internal reflection occurs.
+            The calculator is suitable for analyzing antireflection coatings, optical filters, Bragg reflectors, and multilayer systems.
+        </p>
+
+        <p style="margin-top: 25px; font-style: italic; color: var(--gray-text);">
+            For more information, see O.S. Heavens, "Optical Properties of Thin Films," 
+            <em>Reports on Progress in Physics</em>, vol. 23, pp. 1-65, 1960.
+        </p>
+    </div>
+</div>
+
+<script>
+(function() {
+    // --- Global state for exporting data ---
+    let lastResults = null;
+
+    // --- Complex Number Library (Unchanged) ---
+    const Complex = {
+        add: (c1, c2) => [c1[0] + c2[0], c1[1] + c2[1]],
+        sub: (c1, c2) => [c1[0] - c2[0], c1[1] - c2[1]],
+        mul: (c1, c2) => [c1[0] * c2[0] - c1[1] * c2[1], c1[0] * c2[1] + c1[1] * c2[0]],
+        div: (c1, c2) => {
+            const denom = c2[0] * c2[0] + c2[1] * c2[1];
+            if (denom === 0) return [Infinity, Infinity];
+            return [(c1[0] * c2[0] + c1[1] * c2[1]) / denom, (c1[1] * c2[0] - c1[0] * c2[1]) / denom];
+        },
+        absSq: (c) => c[0] * c[0] + c[1] * c[1],
+        cos: (c) => [Math.cos(c[0]) * Math.cosh(c[1]), -Math.sin(c[0]) * Math.sinh(c[1])],
+        sin: (c) => [Math.sin(c[0]) * Math.cosh(c[1]), Math.cos(c[0]) * Math.sinh(c[1])]
+    };
+
+    // --- DOM Elements ---
+    let layerCount = 0;
+    const layersContainer = document.getElementById('layers-container');
+    const addLayerBtn = document.getElementById('add-layer-btn');
+    const calculateBtn = document.getElementById('calculate-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const outputSection = document.getElementById('output-section');
+
+    // --- UI Logic ---
+    function addLayer(n = 1.45, d_um = 0.1) {
+        layerCount++;
+        const layerDiv = document.createElement('div');
+        layerDiv.className = 'layer';
+        layerDiv.id = `layer-${layerCount}`;
+        layerDiv.innerHTML = `
+            <span class="layer-label">Layer ${layerCount}</span>
+            <div class="input-group">
+                <label for="n${layerCount}">n</label>
+                <input type="number" id="n${layerCount}" class="layer-n" value="${n}" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="d${layerCount}">d (μm)</label>
+                <input type="number" id="d${layerCount}" class="layer-d" value="${d_um}" step="0.01">
+            </div>
+            <button class="delete-layer-btn" data-layer-id="${layerCount}">&times;</button>
+        `;
+        layersContainer.appendChild(layerDiv);
+        
+        layerDiv.querySelector('.delete-layer-btn').addEventListener('click', (e) => {
+            const idToRemove = e.target.dataset.layerId;
+            document.getElementById(`layer-${idToRemove}`).remove();
+            updateLayerLabels();
+        });
+    }
+
+    function updateLayerLabels() {
+        const layers = layersContainer.querySelectorAll('.layer');
+        layerCount = layers.length;
+        layers.forEach((layer, index) => {
+            const newId = index + 1;
+            layer.id = `layer-${newId}`;
+            layer.querySelector('.layer-label').textContent = `Layer ${newId}`;
+            layer.querySelector('.layer-n').id = `n${newId}`;
+            layer.querySelector('.layer-d').id = `d${newId}`;
+            layer.querySelector('label[for^="n"]').setAttribute('for', `n${newId}`);
+            layer.querySelector('label[for^="d"]').setAttribute('for', `d${newId}`);
+            layer.querySelector('.delete-layer-btn').dataset.layerId = newId;
+        });
+    }
+
+    // --- Calculation Logic ---
+    function runCalculation() {
+        const params = {
+            polarization: document.getElementById('polarization').value,
+            lambda: parseFloat(document.getElementById('lambda').value),
+            n_inc: parseFloat(document.getElementById('n_inc').value),
+            n_sub: parseFloat(document.getElementById('n_sub').value),
+            angle_start: parseFloat(document.getElementById('angle_start').value),
+            angle_end: parseFloat(document.getElementById('angle_end').value),
+            angle_step: parseFloat(document.getElementById('angle_step').value),
+            layers: []
+        };
+        
+        const layerElements = document.querySelectorAll('.layer');
+        for(let i = 0; i < layerElements.length; i++){
+            params.layers.push({
+                n: parseFloat(layerElements[i].querySelector('.layer-n').value),
+                d_um: parseFloat(layerElements[i].querySelector('.layer-d').value)
+            });
+        }
+        
+        if (params.angle_step <= 0) {
+            alert("Angle Step must be greater than zero.");
+            return;
+        }
+
+        const angles = [];
+        const reflectances = [];
+        const transmittances = [];
+
+        for (let angle_deg = params.angle_start; angle_deg <= params.angle_end; angle_deg += params.angle_step) {
+            const angle_rad = angle_deg * Math.PI / 180;
+            const result = calculateTMM(angle_rad, params);
+            
+            angles.push(angle_deg);
+            reflectances.push(result.R);
+            transmittances.push(result.T);
+        }
+        
+        lastResults = { angles, reflectances, transmittances };
+        outputSection.style.visibility = 'visible';
+        updatePlot(angles, reflectances, transmittances);
+    }
+    
+    function calculateTMM(theta_inc, params) {
+        const { polarization, lambda, n_inc, n_sub, layers } = params;
+        const k0 = 2 * Math.PI / lambda;
+        
+        const n_list = [n_inc, ...layers.map(l => l.n), n_sub];
+        const L = layers.length;
+
+        const cos_theta_list = [];
+        const sin_theta_inc_sq = Math.sin(theta_inc) ** 2;
+        for (let i = 0; i < n_list.length; i++) {
+            const n_i = n_list[i];
+            const sin_theta_i_sq = (n_inc / n_i) ** 2 * sin_theta_inc_sq;
+            if (sin_theta_i_sq >= 1) {
+                cos_theta_list.push([0, Math.sqrt(sin_theta_i_sq - 1)]);
+            } else {
+                cos_theta_list.push([Math.sqrt(1 - sin_theta_i_sq), 0]);
+            }
+        }
+        
+        const u_list = [];
+        for (let i = 0; i < n_list.length; i++) {
+            const n_i_complex = [n_list[i], 0];
+            const cos_theta_i = cos_theta_list[i];
+            if (polarization === 'TE') {
+                u_list.push(Complex.mul(n_i_complex, cos_theta_i));
+            } else {
+                u_list.push(Complex.div(n_i_complex, cos_theta_i));
+            }
+        }
+        
+        let M = [[ [1,0], [0,0] ], [ [0,0], [1,0] ]];
+
+        for (let i = 0; i < L; i++) {
+            const d_nm = layers[i].d_um * 1000;
+            const n_i_complex = [n_list[i+1], 0];
+            const cos_theta_i = cos_theta_list[i+1];
+            const u_i = u_list[i+1];
+            
+            const delta = Complex.mul([k0 * d_nm, 0], Complex.mul(n_i_complex, cos_theta_i));
+            
+            const cos_delta = Complex.cos(delta);
+            const sin_delta = Complex.sin(delta);
+
+            const i_over_u = Complex.div([0, 1], u_i);
+            const i_u = Complex.mul([0, 1], u_i);
+            
+            const C_i = [
+                [cos_delta, Complex.mul(i_over_u, sin_delta)],
+                [Complex.mul(i_u, sin_delta), cos_delta]
+            ];
+            
+            const m11 = Complex.add(Complex.mul(M[0][0], C_i[0][0]), Complex.mul(M[0][1], C_i[1][0]));
+            const m12 = Complex.add(Complex.mul(M[0][0], C_i[0][1]), Complex.mul(M[0][1], C_i[1][1]));
+            const m21 = Complex.add(Complex.mul(M[1][0], C_i[0][0]), Complex.mul(M[1][1], C_i[1][0]));
+            const m22 = Complex.add(Complex.mul(M[1][0], C_i[0][1]), Complex.mul(M[1][1], C_i[1][1]));
+            M = [[m11, m12], [m21, m22]];
+        }
+        
+        const u0 = u_list[0];
+        const u_sub = u_list[L+1];
+        const m11 = M[0][0], m12 = M[0][1], m21 = M[1][0], m22 = M[1][1];
+
+        const term1 = Complex.add(m11, Complex.mul(m12, u_sub));
+        const term2 = Complex.add(m21, Complex.mul(m22, u_sub));
+        
+        const r_num = Complex.sub(Complex.mul(term1, u0), term2);
+        const denom = Complex.add(Complex.mul(term1, u0), term2);
+        
+        const r = Complex.div(r_num, denom);
+        const t = Complex.div(Complex.mul([2,0], u0), denom);
+        
+        const R = Complex.absSq(r);
+        const T_factor = Complex.div(u_sub, u0);
+        const T = T_factor[0] * Complex.absSq(t);
+
+        return { R, T };
+    }
+    
+    // --- UI Update and Export Functions ---
+    function updatePlot(angles, reflectances, transmittances) {
+        const trace1 = {
+            x: angles,
+            y: reflectances,
+            mode: 'lines',
+            name: 'Reflectance (R)',
+            line: { color: 'rgb(220, 53, 69)', width: 2.5 }
+        };
+        const trace2 = {
+            x: angles,
+            y: transmittances,
+            mode: 'lines',
+            name: 'Transmittance (T)',
+            line: { color: 'rgb(25, 135, 84)', width: 2.5 }
+        };
+        const data = [trace1, trace2];
+        const layout = {
+            xaxis: { title: 'Angle of Incidence (°)' },
+            yaxis: { title: 'Intensity', range: [0, 1.05], automargin: true },
+            margin: { l: 60, r: 20, b: 50, t: 40 },
+            legend: { y: 1.05, yanchor: 'bottom', x: 0.5, xanchor: 'center', orientation: 'h' },
+            hovermode: 'x unified'
+        };
+        Plotly.newPlot('result-plot', data, layout, {responsive: true});
+    }
+
+    function exportData() {
+        if (!lastResults) {
+            alert("Please run a calculation first.");
+            return;
+        }
+
+        let content = "Angle(deg)\tReflectance\tTransmittance\n";
+        for(let i = 0; i < lastResults.angles.length; i++) {
+            content += `${lastResults.angles[i].toFixed(2)}\t${lastResults.reflectances[i].toFixed(6)}\t${lastResults.transmittances[i].toFixed(6)}\n`;
+        }
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "multilayer_data.txt";
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    }
+    
+    // --- Initial Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+        addLayerBtn.addEventListener('click', () => addLayer());
+        calculateBtn.addEventListener('click', runCalculation);
+        exportBtn.addEventListener('click', exportData);
+        
+        // Add two default layers
+        addLayer(1, 0.05);
+        addLayer(1.58, 2.5);
+    });
+
+})();
+</script>
+
+</body>
+</html>

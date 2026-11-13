@@ -1,0 +1,642 @@
+<!-- Google Sites용: table+고정크기 기반, flex/grid 미사용, 인라인 스타일 중심 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Projectile Motion Simulation</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin:0; padding:0;}
+        .header { text-align: left; padding: 18px 10px 5px 18px; font-size: 2rem; font-weight: 600;}
+        .sim-values-table th, .sim-values-table td { padding: 2px 7px; text-align: right;}
+        .sim-values-table th { text-align: left; color: #333; background: #f4f4f4;}
+        .sim-values-table .analytic { color: #2661c1; font-weight: bold;}
+        .sim-values-table .sim { color: #c14242; font-weight: bold;}
+        .btn { padding: 8px 20px; border: none; border-radius: 4px; font-weight: 600; font-size: 1rem; margin: 2px 5px;}
+        .btn-primary { background: #666; color: #fff;}
+        .btn-secondary { background: #888; color: #fff;}
+        .btn-success { background: #478874; color: #fff;}
+        .input-group { margin-bottom: 8px; }
+        label { font-weight: 500; font-size: 0.95rem;}
+        input, select { font-size: 0.98rem; padding: 3px 7px; border: 1px solid #bbb; border-radius: 3px;}
+        .slider { width: 92%; }
+        /* info-display for canvas */
+        .info-display {
+            position: absolute; right: 8px; top: 8px;
+            background: rgba(255,255,255,0.93); padding: 10px 13px; border-radius: 6px;
+            border: 1px solid #ccc; font-size: 13px; font-family: 'Courier New',monospace;
+        }
+        @media (max-width: 1000px) {
+            .plotcol { display: block; width: 100%!important; }
+        }
+    </style>
+</head>
+<body>
+<div class="header">Projectile Motion Simulation</div>
+
+<!-- 1행 4열 컨트롤: 테이블 기반 -->
+<table style="width:100%; margin-bottom:8px; border-collapse:separate; border-spacing:8px 0;">
+  <tr>
+    <!-- Physics Condition -->
+    <td style="width:24%; vertical-align:top; background:#fff; border:1px solid #ddd; border-radius:7px; padding:9px;">
+      <div style="font-weight:700; margin-bottom:6px;">Physics Conditions</div>
+      <div class="input-group">
+        <label>Air Resistance</label>
+        <select id="airResistance">
+          <option value="none">Ignore</option>
+          <option value="drag">Include</option>
+        </select>
+      </div>
+      <div class="input-group" id="dragGroup" style="display:none;">
+        <label>Drag Coefficient</label>
+        <input type="number" id="dragCoeff" value="0.47" min="0" max="2" step="0.01">
+      </div>
+      <div class="input-group" id="radiusGroup" style="display:none;">
+        <label>Radius (m)</label>
+        <input type="number" id="radius" value="0.1" min="0.01" max="1" step="0.01">
+      </div>
+    </td>
+    <!-- Animation Control -->
+    <td style="width:24%; vertical-align:top; background:#fff; border:1px solid #ddd; border-radius:7px; padding:9px;">
+      <div style="font-weight:700; margin-bottom:6px;">Animation Control</div>
+      <div class="input-group">
+        <label>Speed: <span id="speedValue">1.0x</span></label><br>
+        <input type="range" id="speedSlider" class="slider" min="0.1" max="3" step="0.1" value="1">
+      </div>
+    </td>
+    <!-- Launch Parameters -->
+    <td style="width:24%; vertical-align:top; background:#fff; border:1px solid #ddd; border-radius:7px; padding:9px;">
+      <div style="font-weight:700; margin-bottom:6px;">Launch Parameters</div>
+      <div class="input-group">
+        <label>Launch Angle (deg)</label>
+        <input type="number" id="angle" value="45" min="0" max="90" step="1">
+      </div>
+      <div class="input-group">
+        <label>Initial Velocity (m/s)</label>
+        <input type="number" id="velocity" value="1" min="0" max="200" step="0.1">
+      </div>
+      <div class="input-group">
+        <label>Mass (kg)</label>
+        <input type="number" id="mass" value="0.2" min="0.01" max="1000" step="0.1">
+      </div>
+      <div class="input-group">
+        <label>Time Step (s)</label>
+        <input type="number" id="dt" value="0.001" min="0.0001" max="0.1" step="0.0001">
+      </div>
+    </td>
+    <!-- Simulated Values -->
+    <td style="width:28%; vertical-align:top; background:#f8fafd; border:1px solid #ccd; border-radius:7px; padding:7px 8px 5px 8px;">
+      <div style="font-weight:700; margin-bottom:6px;">Simulated Values</div>
+      <table class="sim-values-table" style="width:100%; font-size:1.01rem;">
+        <tr><th></th><th>Analytic</th><th>Simulated</th></tr>
+        <tr><td>Max Range (m)</td><td id="ana-range" class="analytic">-</td><td id="sim-range" class="sim">-</td></tr>
+        <tr><td>Max Height (m)</td><td id="ana-height" class="analytic">-</td><td id="sim-height" class="sim">-</td></tr>
+        <tr><td>Time of Flight (s)</td><td id="ana-time" class="analytic">-</td><td id="sim-time" class="sim">-</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- 버튼 영역 -->
+<div style="text-align:center; margin:0 0 10px 0;">
+  <button class="btn btn-primary" id="startBtn">Start</button>
+  <button class="btn btn-secondary" id="resetBtn">Reset</button>
+  <button class="btn btn-success" id="exportBtn">Export Data</button>
+</div>
+
+<!-- 시뮬레이션 캔버스 영역 -->
+<div style="margin:auto; width:700px; height:380px; background:#fff; border-radius:7px; border:1px solid #bbb; position:relative;">
+  <canvas id="simulationCanvas" width="700" height="380" style="display:block;"></canvas>
+  <div class="info-display" id="infoDisplay"
+       style="z-index: 2;">
+    <div>Time: 0.00 s</div>
+    <div>Position: (0.0, 0.0) m</div>
+    <div>Velocity: (0.0, 0.0) m/s</div>
+    <div>Acceleration: (0.0, 0.0) m/s²</div>
+  </div>
+</div>
+
+<!-- 플롯 영역: 2열로 배치 -->
+<div style="width:100%; margin: 16px 0 0 0; text-align:center;">
+  <div class="plotcol" style="display:inline-block; width:49%; vertical-align:top;">
+    <div id="plot-xyt" style="width:100%; min-width:320px; height:320px; margin-bottom:8px;"></div>
+    <div id="plot-vxvyt" style="width:100%; min-width:320px; height:320px; margin-bottom:8px;"></div>
+  </div>
+  <div class="plotcol" style="display:inline-block; width:49%; vertical-align:top;">
+    <div id="plot-axayt" style="width:100%; min-width:320px; height:320px; margin-bottom:8px;"></div>
+    <div id="plot-yx" style="width:100%; min-width:320px; height:320px; margin-bottom:8px;"></div>
+  </div>
+</div>
+
+<script>
+class ProjectileSimulation {
+    constructor() {
+        this.canvas = document.getElementById('simulationCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.isRunning = false;
+        this.animationId = null;
+        this.data = { t: [], x: [], y: [], vx: [], vy: [], ax: [], ay: [] };
+        this.currentIndex = 0;
+        this.speedMultiplier = 1.0;
+        this.viewMargin = 0.1;
+        this.minX = -5; this.maxX = 130;
+        this.minY = -5; this.maxY = 35;
+        this.isDrawingZoomBox = false;
+        this.zoomBoxStart = { x: 0, y: 0 };
+        this.zoomBoxEnd = { x: 0, y: 0 };
+        this.g = 9.81;
+        this.airDensity = 1.225;
+        this.analytic = { range: 0, height: 0, time: 0 };
+        this.simulated = { range: 0, height: 0, time: 0 };
+        this.init();
+    }
+    init() {
+        this.calculateViewBounds();
+        this.setupEventListeners();
+        this.initializePlots();
+        this.draw();
+        this.updateSimTable();
+    }
+    calculateViewBounds() {
+        const angleInput = document.getElementById('angle');
+        const velocityInput = document.getElementById('velocity');
+        if (!angleInput || !velocityInput) return;
+        const angle = parseFloat(angleInput.value) * Math.PI / 180;
+        const v0 = parseFloat(velocityInput.value);
+        const v0x = v0 * Math.cos(angle);
+        const v0y = v0 * Math.sin(angle);
+        const maxRange = (v0 * v0 * Math.sin(2 * angle)) / this.g;
+        const maxHeight = (v0y * v0y) / (2 * this.g);
+        const xMargin = Math.max(maxRange * this.viewMargin, 5);
+        const yMargin = Math.max(maxHeight * this.viewMargin, 2);
+        this.minX = -xMargin; this.maxX = maxRange + xMargin;
+        this.minY = -yMargin; this.maxY = maxHeight + yMargin;
+        if (this.maxX - this.minX < 20) {
+            const center = (this.maxX + this.minX) / 2;
+            this.minX = 0; this.maxX = center * 2.2;
+        }
+        if (this.maxY - this.minY < 10) {
+            const center = (this.maxY + this.minY) / 2;
+            this.minY = 0; this.maxY = center * 2.2;
+        }
+    }
+    setupEventListeners() {
+        document.getElementById('startBtn').addEventListener('click', () => this.toggleSimulation());
+        document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+        document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            this.speedMultiplier = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = this.speedMultiplier.toFixed(1) + 'x';
+        });
+        document.getElementById('airResistance').addEventListener('change', (e) => {
+            const dragGroup = document.getElementById('dragGroup');
+            const radiusGroup = document.getElementById('radiusGroup');
+            if (e.target.value === 'drag') {
+                dragGroup.style.display = 'block';
+                radiusGroup.style.display = 'block';
+            } else {
+                dragGroup.style.display = 'none';
+                radiusGroup.style.display = 'none';
+            }
+        });
+        ['angle', 'velocity', 'mass', 'dt', 'airResistance', 'dragCoeff', 'radius'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => {
+                this.calculateViewBounds();
+                this.calculateAnalytic();
+                this.calculateTrajectory();
+                this.draw();
+                this.updateSimTable();
+            });
+        });
+        // 캔버스 리사이즈 금지 (고정 px)
+    }
+    calculateAnalytic() {
+        const angle = parseFloat(document.getElementById('angle').value) * Math.PI / 180;
+        const v0 = parseFloat(document.getElementById('velocity').value);
+        this.analytic.time = 2 * v0 * Math.sin(angle) / this.g;
+        this.analytic.range = (v0 * v0 * Math.sin(2 * angle)) / this.g;
+        this.analytic.height = (v0 * Math.sin(angle)) ** 2 / (2 * this.g);
+    }
+    calculateTrajectory() {
+        const angle = parseFloat(document.getElementById('angle').value) * Math.PI / 180;
+        const v0 = parseFloat(document.getElementById('velocity').value);
+        const mass = parseFloat(document.getElementById('mass').value);
+        const hasAirResistance = document.getElementById('airResistance').value === 'drag';
+        const dt = Math.max(0.0001, parseFloat(document.getElementById('dt').value));
+        const v0x = v0 * Math.cos(angle);
+        const v0y = v0 * Math.sin(angle);
+        this.data = { t: [], x: [], y: [], vx: [], vy: [], ax: [], ay: [] };
+        let t = 0;
+        let x = 0, y = 0;
+        let vx = v0x, vy = v0y;
+        let maxHeight = y, maxRange = x, timeOfFlight = 0;
+        while (y >= 0 && t < 100) {
+            this.data.t.push(t);
+            this.data.x.push(x);
+            this.data.y.push(y);
+            this.data.vx.push(vx);
+            this.data.vy.push(vy);
+            let ax = 0, ay = -this.g;
+            if (hasAirResistance) {
+                const dragCoeff = parseFloat(document.getElementById('dragCoeff').value);
+                const radius = parseFloat(document.getElementById('radius').value);
+                const area = Math.PI * radius * radius;
+                const speed = Math.sqrt(vx * vx + vy * vy);
+                const dragForce = 0.5 * this.airDensity * dragCoeff * area * speed * speed;
+                if (speed > 0) {
+                    ax = -dragForce * (vx / speed) / mass;
+                    ay = -this.g - dragForce * (vy / speed) / mass;
+                }
+            }
+            this.data.ax.push(ax);
+            this.data.ay.push(ay);
+            x += vx * dt + 0.5 * ax * dt * dt;
+            y += vy * dt + 0.5 * ay * dt * dt;
+            vx += ax * dt;
+            vy += ay * dt;
+            t += dt;
+            if (y > maxHeight) maxHeight = y;
+            if (y < 0) {
+                if (this.data.y.length > 1) {
+                    const y1 = this.data.y[this.data.y.length - 2];
+                    const y2 = y;
+                    const x1 = this.data.x[this.data.x.length - 2];
+                    const x2 = x;
+                    const t1 = this.data.t[this.data.t.length - 2];
+                    const t2 = t;
+                    const frac = y1 / (y1 - y2);
+                    this.simulated.range = x1 + frac * (x2 - x1);
+                    this.simulated.time = t1 + frac * (t2 - t1);
+                } else {
+                    this.simulated.range = x;
+                    this.simulated.time = t;
+                }
+                this.simulated.height = maxHeight;
+                break;
+            }
+        }
+        if (!hasAirResistance) {
+            this.simulated.range = this.data.x[this.data.x.length-1];
+            this.simulated.height = maxHeight;
+            this.simulated.time = this.data.t[this.data.t.length-1];
+        }
+    }
+    updateSimTable() {
+        this.calculateAnalytic();
+        if (this.data.t.length === 0) this.calculateTrajectory();
+        document.getElementById('ana-range').textContent = this.analytic.range.toFixed(4);
+        document.getElementById('ana-height').textContent = this.analytic.height.toFixed(4);
+        document.getElementById('ana-time').textContent = this.analytic.time.toFixed(4);
+        document.getElementById('sim-range').textContent = this.simulated.range ? this.simulated.range.toFixed(4) : "-";
+        document.getElementById('sim-height').textContent = this.simulated.height ? this.simulated.height.toFixed(4) : "-";
+        document.getElementById('sim-time').textContent = this.simulated.time ? this.simulated.time.toFixed(4) : "-";
+    }
+    toggleSimulation() {
+        if (this.isRunning) {
+            this.pause();
+        } else {
+            this.start();
+        }
+    }
+    start() {
+        this.calculateViewBounds();
+        this.calculateAnalytic();
+        this.calculateTrajectory();
+        this.isRunning = true;
+        this.currentIndex = 0;
+        document.getElementById('startBtn').textContent = 'Pause';
+        this.animate();
+        this.updateSimTable();
+    }
+    pause() {
+        this.isRunning = false;
+        document.getElementById('startBtn').textContent = 'Resume';
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+    }
+    reset() {
+        this.isRunning = false;
+        this.currentIndex = 0;
+        document.getElementById('startBtn').textContent = 'Start';
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+        }
+        this.data = { t: [], x: [], y: [], vx: [], vy: [], ax: [], ay: [] };
+        this.calculateViewBounds();
+        this.calculateAnalytic();
+        this.simulated = { range: 0, height: 0, time: 0 };
+        this.draw();
+        this.updatePlots();
+        this.updateInfo(0, 0, 0, 0, 0, 0, 0);
+        this.updateSimTable();
+    }
+    exportData() {
+        if (this.data.t.length === 0) {
+            alert('No data to export. Run simulation first.');
+            return;
+        }
+        let csvContent = 'Time(s),X(m),Y(m),Vx(m/s),Vy(m/s),Ax(m/s²),Ay(m/s²)\n';
+        for (let i = 0; i < this.data.t.length; i++) {
+            csvContent += `${this.data.t[i].toFixed(4)},${this.data.x[i].toFixed(4)},${this.data.y[i].toFixed(4)},${this.data.vx[i].toFixed(4)},${this.data.vy[i].toFixed(4)},${this.data.ax[i].toFixed(4)},${this.data.ay[i].toFixed(4)}\n`;
+        }
+        const blob = new Blob([csvContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'projectile_simulation_data.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+    animate() {
+        if (!this.isRunning) return;
+        const frameRate = 60;
+        const dataStepSize = Math.max(1, Math.floor(this.data.t.length / (this.data.t[this.data.t.length - 1] * frameRate / this.speedMultiplier)));
+        this.currentIndex += dataStepSize * this.speedMultiplier;
+        if (this.currentIndex >= this.data.t.length) {
+            this.currentIndex = this.data.t.length - 1;
+            this.isRunning = false;
+            document.getElementById('startBtn').textContent = 'Start';
+            this.updateSimTable();
+        }
+        this.draw();
+        this.updatePlots();
+        if (this.currentIndex < this.data.t.length) {
+            const idx = Math.floor(this.currentIndex);
+            this.updateInfo(
+                this.data.t[idx] || 0,
+                this.data.x[idx] || 0,
+                this.data.y[idx] || 0,
+                this.data.vx[idx] || 0,
+                this.data.vy[idx] || 0,
+                this.data.ax[idx] || 0,
+                this.data.ay[idx] || 0
+            );
+        }
+        if (this.isRunning) {
+            this.animationId = requestAnimationFrame(() => this.animate());
+        }
+    }
+    worldToCanvas(worldX, worldY) {
+        const canvasX = ((worldX - this.minX) / (this.maxX - this.minX)) * this.canvas.width;
+        const canvasY = this.canvas.height - ((worldY - this.minY) / (this.maxY - this.minY)) * this.canvas.height;
+        return { x: canvasX, y: canvasY };
+    }
+    draw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawAxesAndGrid();
+        if (this.data.x.length > 1) {
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#666';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([5, 5]);
+            for (let i = 0; i < Math.min(this.currentIndex, this.data.x.length - 1); i++) {
+                const pos = this.worldToCanvas(this.data.x[i], this.data.y[i]);
+                if (i === 0) {
+                    this.ctx.moveTo(pos.x, pos.y);
+                } else {
+                    this.ctx.lineTo(pos.x, pos.y);
+                }
+            }
+            this.ctx.stroke();
+        }
+        if (this.currentIndex < this.data.x.length && this.currentIndex >= 0) {
+            const idx = Math.floor(this.currentIndex);
+            const pos = this.worldToCanvas(this.data.x[idx], this.data.y[idx]);
+            const mass = parseFloat(document.getElementById('mass').value);
+            const ballRadius = Math.max(8, Math.sqrt(mass) * 4);
+            this.ctx.beginPath();
+            this.ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            this.ctx.arc(pos.x + 2, pos.y + 2, ballRadius, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.fillStyle = '#888';
+            this.ctx.arc(pos.x, pos.y, ballRadius, 0, 2 * Math.PI);
+            this.ctx.fill();
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#555';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([]);
+            this.ctx.arc(pos.x, pos.y, ballRadius, 0, 2 * Math.PI);
+            this.ctx.stroke();
+        }
+        const groundStart = this.worldToCanvas(this.minX, 0);
+        const groundEnd = this.worldToCanvas(this.maxX, 0);
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = '#8B4513';
+        this.ctx.lineWidth = 3;
+        this.ctx.moveTo(groundStart.x, groundStart.y);
+        this.ctx.lineTo(groundEnd.x, groundEnd.y);
+        this.ctx.stroke();
+    }
+    drawAxesAndGrid() {
+        const ctx = this.ctx;
+        const xRange = this.maxX - this.minX;
+        const yRange = this.maxY - this.minY;
+        const xTickInterval = this.calculateTickInterval(xRange);
+        const yTickInterval = this.calculateTickInterval(yRange);
+        ctx.save();
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 4]);
+        ctx.strokeStyle = '#b6c2cf';
+        for (let x = Math.ceil(this.minX / xTickInterval) * xTickInterval; x <= this.maxX; x += xTickInterval) {
+            const pos = this.worldToCanvas(x, 0);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, 0);
+            ctx.lineTo(pos.x, this.canvas.height);
+            ctx.stroke();
+        }
+        for (let y = Math.ceil(this.minY / yTickInterval) * yTickInterval; y <= this.maxY; y += yTickInterval) {
+            const pos = this.worldToCanvas(0, y);
+            ctx.beginPath();
+            ctx.moveTo(0, pos.y);
+            ctx.lineTo(this.canvas.width, pos.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 13px Arial';
+        ctx.fillStyle = '#29356c';
+        ctx.strokeStyle = '#1e2a61';
+        ctx.lineWidth = 3;
+        for (let x = Math.ceil(this.minX / xTickInterval) * xTickInterval; x <= this.maxX; x += xTickInterval) {
+            const pos = this.worldToCanvas(x, 0);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, this.canvas.height - 16);
+            ctx.lineTo(pos.x, this.canvas.height);
+            ctx.stroke();
+            const tickLabel = x.toFixed(2) + 'm';
+            ctx.fillStyle = "#29356c";
+            ctx.fillText(tickLabel, pos.x - 10, this.canvas.height - 20);
+        }
+        for (let y = Math.ceil(this.minY / yTickInterval) * yTickInterval; y <= this.maxY; y += yTickInterval) {
+            const pos = this.worldToCanvas(0, y);
+            ctx.beginPath();
+            ctx.moveTo(0, pos.y);
+            ctx.lineTo(18, pos.y);
+            ctx.stroke();
+            if (y !== 0) {
+                const tickLabel = y.toFixed(2) + 'm';
+                ctx.fillStyle = "#29356c";
+                ctx.fillText(tickLabel, 6, pos.y + 5);
+            }
+        }
+        ctx.restore();
+
+        // Draw origin cross
+        const origin = this.worldToCanvas(0, 0);
+        ctx.beginPath();
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 3;
+        ctx.moveTo(origin.x - 8, origin.y);
+        ctx.lineTo(origin.x + 8, origin.y);
+        ctx.moveTo(origin.x, origin.y - 8);
+        ctx.lineTo(origin.x, origin.y + 8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.arc(origin.x, origin.y, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+    calculateTickInterval(range) {
+        const roughInterval = range / 8;
+        const magnitude = Math.pow(10, Math.floor(Math.log10(roughInterval)));
+        const normalized = roughInterval / magnitude;
+        if (normalized <= 1) return magnitude;
+        else if (normalized <= 2) return 2 * magnitude;
+        else if (normalized <= 5) return 5 * magnitude;
+        else return 10 * magnitude;
+    }
+    updateInfo(t, x, y, vx, vy, ax, ay) {
+        const infoDisplay = document.getElementById('infoDisplay');
+        infoDisplay.innerHTML = `
+            <div>Time: ${t.toFixed(2)} s</div>
+            <div>Position: (${x.toFixed(1)}, ${y.toFixed(1)}) m</div>
+            <div>Velocity: (${vx.toFixed(1)}, ${vy.toFixed(1)}) m/s</div>
+            <div>Acceleration: (${ax.toFixed(1)}, ${ay.toFixed(1)}) m/s²</div>
+        `;
+    }
+    initializePlots() {
+        Plotly.newPlot('plot-xyt', [], {
+            title: { text: 'Position vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'X Position (m)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 },
+        }, { responsive: true });
+        Plotly.newPlot('plot-vxvyt', [], {
+            title: { text: 'Velocity vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Velocity (m/s)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 },
+        }, { responsive: true });
+        Plotly.newPlot('plot-axayt', [], {
+            title: { text: 'Acceleration vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Acceleration (m/s²)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 },
+        }, { responsive: true });
+        Plotly.newPlot('plot-yx', [], {
+            title: { text: 'Trajectory (Y vs X)', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'X Position (m)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Y Position (m)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 },
+        }, { responsive: true });
+    }
+    updatePlots() {
+        if (this.data.t.length === 0) return;
+        const currentIdx = Math.floor(this.currentIndex);
+        const sliceEnd = Math.min(currentIdx + 1, this.data.t.length);
+        Plotly.react('plot-xyt', [
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.x.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'X Position',
+                line: { color: '#4169E1', width: 3 },
+            },
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.y.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Y Position',
+                line: { color: '#DC143C', width: 3 },
+            }
+        ], {
+            title: { text: 'Position vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'X/Y Position (m)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 }
+        });
+        Plotly.react('plot-vxvyt', [
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.vx.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'X Velocity',
+                line: { color: '#4169E1', width: 3 },
+            },
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.vy.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Y Velocity',
+                line: { color: '#DC143C', width: 3 },
+            }
+        ], {
+            title: { text: 'Velocity vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Velocity (m/s)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 }
+        });
+        Plotly.react('plot-axayt', [
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.ax.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'X Acceleration',
+                line: { color: '#4169E1', width: 3 },
+            },
+            {
+                x: this.data.t.slice(0, sliceEnd),
+                y: this.data.ay.slice(0, sliceEnd),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Y Acceleration',
+                line: { color: '#DC143C', width: 3 },
+            }
+        ], {
+            title: { text: 'Acceleration vs Time', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'Time (s)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Acceleration (m/s²)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 }
+        });
+        Plotly.react('plot-yx', [{
+            x: this.data.x.slice(0, sliceEnd),
+            y: this.data.y.slice(0, sliceEnd),
+            type: 'scatter',
+            mode: 'lines',
+            line: { color: '#666', width: 3 }
+        }], {
+            title: { text: 'Trajectory (Y vs X)', font: { size: 16, family: 'Arial, sans-serif' } },
+            xaxis: { title: { text: 'X Position (m)', font: { size: 14 } } },
+            yaxis: { title: { text: 'Y Position (m)', font: { size: 14 } } },
+            margin: { l: 56, r: 30, t: 38, b: 42 }
+        });
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    new ProjectileSimulation();
+});
+</script>
+</body>
+</html>

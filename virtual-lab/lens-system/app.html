@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            background-color: #f7f7f7;
+            margin: 0;
+            max-width: 1400px;
+            margin: auto;
+        }
+        
+        h1 {
+            text-align: left;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        /* Tab system styles */
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            cursor: pointer;
+            margin-right: 2px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .tab-button.active {
+            background-color: #fff;
+            border-bottom: 2px solid #fff;
+            color: #2196F3;
+        }
+        
+        .tab-button:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .tab-button.active:hover {
+            background-color: #fff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .top-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        
+        .controls-left {
+            flex: 1.2;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .controls-right {
+            flex: 0.8;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: #fff;
+            padding: 0;
+            position: relative;
+        }
+        
+        .input-group {
+            margin-bottom: 8px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+            color: #333;
+            font-weight: normal;
+        }
+        
+        .input-group input, .input-group select {
+            width: 80%;
+            padding: 4px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #999;
+        }
+        
+        .input-group input[readonly] {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+        
+        .ray-controls {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: normal;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        
+        canvas {
+            display: block;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #444;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+        }
+        
+        .download-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .download-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .slider-container {
+            margin-bottom: 8px;
+        }
+        
+        .slider-container input[type="range"] {
+            width: 80%;
+            margin: 5px 0;
+        }
+        
+        .slider-value {
+            font-size: 11px;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        /* Double lens specific styles */
+        .lens-group {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .lens-group h4 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #2196F3;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Optical Lens System Simulator</h1>
+    
+    <!-- Tab System -->
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <div class="tab-button active" onclick="switchTab('single')">Single Lens Imaging</div>
+            <div class="tab-button" onclick="switchTab('double')">Double Lens Imaging</div>
+        </div>
+    </div>
+    
+    <!-- Single Lens Tab -->
+    <div id="singleTab" class="tab-content active">
+        <div class="top-controls">
+            <div class="controls-left">
+                <div class="section-title">Input Parameters</div>
+                
+                <div class="input-group">
+                    <label>Lens Type</label>
+                    <select id="singleLensType">
+                        <option value="convex">Convex Lens</option>
+                        <option value="concave">Concave Lens</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>System Length (cm)</label>
+                    <input type="number" id="singleSystemLength" value="30" min="10" max="300" step="1">
+                </div>
+                
+                <div class="input-group">
+                    <label>Object Distance (cm)</label>
+                    <input type="number" id="singleObjectDistance" value="10" min="1" max="200" step="0.5">
+                </div>
+                
+                <div class="input-group">
+                    <label>Focal Length (cm)</label>
+                    <input type="number" id="singleFocalLength" value="5" min="1" max="30" step="0.5">
+                </div>
+                
+                <div class="input-group">
+                    <label>Object Height (cm)</label>
+                    <input type="number" id="singleObjectHeight" value="3" min="0.5" max="8" step="0.1">
+                </div>
+            </div>
+            
+            <div class="controls-right">
+                <div class="slider-container">
+                    <label>Image Arrow Size Scale</label>
+                    <input type="range" id="singleImageArrowScale" min="0.01" max="1.0" step="0.01" value="1.00">
+                    <span class="slider-value" id="singleArrowScaleValue">1.00x</span>
+                </div>
+                
+                <div class="ray-controls">
+                    <div class="checkbox-group">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="singleShowRays" checked>
+                                Show Rays
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="singleShowFocalPoints" checked>
+                                Show Focal Points
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="range" id="singleTextScale" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 60px;">
+                                <span style="font-size: 10px;" id="singleTextScaleValue">1.0x</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="singleShowGrid">
+                                Show Grid
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="range" id="singleGridDensity" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 60px;">
+                                <span style="font-size: 10px;" id="singleGridDensityValue">1.0x</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="singleShowRayArrows" checked>
+                                Show Ray Arrows
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="singleShowImageArrow" checked>
+                                Show Image Arrow
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-title" style="margin-top: 15px;">Output Results</div>
+                
+                <div class="input-group">
+                    <label>Image Distance (cm)</label>
+                    <input type="text" id="singleImageDistanceOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Magnification</label>
+                    <input type="text" id="singleMagnificationOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Image Type</label>
+                    <input type="text" id="singleImageTypeOutput" readonly>
+                </div>
+                
+                <button class="download-btn" id="singleDownloadBtn">📷 Download as JPG</button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="singleOpticsCanvas"></canvas>
+        </div>
+    </div>
+    
+    <!-- Double Lens Tab -->
+    <div id="doubleTab" class="tab-content">
+        <div class="top-controls">
+            <div class="controls-left">
+                <div class="section-title">Input Parameters</div>
+                
+                <div class="input-group">
+                    <label>System Length (cm)</label>
+                    <input type="number" id="doubleSystemLength" value="50" min="20" max="300" step="1">
+                </div>
+                
+                <div class="input-group">
+                    <label>Object Distance (cm)</label>
+                    <input type="number" id="doubleObjectDistance" value="10" min="1" max="200" step="0.5">
+                </div>
+                
+                <div class="input-group">
+                    <label>Object Height (cm)</label>
+                    <input type="number" id="doubleObjectHeight" value="3" min="0.5" max="8" step="0.1">
+                </div>
+                
+                <div class="lens-group">
+                    <h4>Lens 1</h4>
+                    <div class="input-group">
+                        <label>Type</label>
+                        <select id="doubleLens1Type">
+                            <option value="convex">Convex Lens</option>
+                            <option value="concave">Concave Lens</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Focal Length (cm)</label>
+                        <input type="number" id="doubleLens1Focal" value="8" min="1" max="30" step="0.5">
+                    </div>
+                </div>
+                
+                <div class="lens-group">
+                    <h4>Lens 2</h4>
+                    <div class="input-group">
+                        <label>Type</label>
+                        <select id="doubleLens2Type">
+                            <option value="convex">Convex Lens</option>
+                            <option value="concave">Concave Lens</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Focal Length (cm)</label>
+                        <input type="number" id="doubleLens2Focal" value="12" min="1" max="30" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label>Distance from Lens 1 (cm)</label>
+                        <input type="number" id="doubleLensDistance" value="15" min="5" max="100" step="0.5">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-right">
+                <div class="slider-container">
+                    <label>Image Arrow Size Scale</label>
+                    <input type="range" id="doubleImageArrowScale" min="0.01" max="1.0" step="0.01" value="1.00">
+                    <span class="slider-value" id="doubleArrowScaleValue">1.00x</span>
+                </div>
+                
+                <div class="ray-controls">
+                    <div class="checkbox-group">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowRays" checked>
+                                Show Rays
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowFocalPoints" checked>
+                                Show Focal Points
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="range" id="doubleTextScale" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 60px;">
+                                <span style="font-size: 10px;" id="doubleTextScaleValue">1.0x</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowGrid">
+                                Show Grid
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <input type="range" id="doubleGridDensity" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 60px;">
+                                <span style="font-size: 10px;" id="doubleGridDensityValue">1.0x</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowRayArrows" checked>
+                                Show Ray Arrows
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowIntermediateImage" checked>
+                                Show Intermediate Image
+                            </label>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <label style="display: flex; align-items: center; gap: 5px; margin: 0;">
+                                <input type="checkbox" id="doubleShowFinalImage" checked>
+                                Show Final Image
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-title" style="margin-top: 15px;">Output Results</div>
+                
+                <div class="input-group">
+                    <label>Lens 1 Magnification</label>
+                    <input type="text" id="doubleLens1MagOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Lens 2 Magnification</label>
+                    <input type="text" id="doubleLens2MagOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Total Magnification</label>
+                    <input type="text" id="doubleTotalMagOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Final Image Distance (cm)</label>
+                    <input type="text" id="doubleFinalImageDistanceOutput" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label>Final Image Type</label>
+                    <input type="text" id="doubleFinalImageTypeOutput" readonly>
+                </div>
+                
+                <button class="download-btn" id="doubleDownloadBtn">📷 Download as JPG</button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="doubleOpticsCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            if (tabName === 'single') {
+                document.getElementById('singleTab').classList.add('active');
+                document.querySelector('[onclick="switchTab(\'single\')"]').classList.add('active');
+                if (!window.singleSystem) {
+                    window.singleSystem = new SingleLensSystem();
+                }
+            } else if (tabName === 'double') {
+                document.getElementById('doubleTab').classList.add('active');
+                document.querySelector('[onclick="switchTab(\'double\')"]').classList.add('active');
+                if (!window.doubleSystem) {
+                    window.doubleSystem = new DoubleLensSystem();
+                }
+            }
+        }
+
+        // Single Lens System Class (기존 코드 그대로)
+        class SingleLensSystem {
+            constructor() {
+                this.canvas = document.getElementById('singleOpticsCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // System parameters - DEFAULT VALUES
+                this.systemLength = 30;
+                this.focalLength = 5;
+                this.objectHeight = 3;
+                this.lensType = 'convex';
+                this.imageArrowScale = 1.0;
+                this.gridDensity = 1.0;
+                this.textScale = 1.0;
+                
+                // Vertical scaling for mouse wheel zoom
+                this.verticalScale = 1.0;
+                
+                // Object distance
+                this.objectDistance = 10;
+                this.objectPosition = 0;
+                this.lensPosition = this.objectPosition + this.objectDistance;
+                
+                // Interaction
+                this.isDragging = false;
+                this.dragOffset = 0;
+                
+                this.updateCanvasSize();
+                this.setupEventListeners();
+                this.updateDisplay();
+            }
+            
+            updateCanvasSize() {
+                const container = this.canvas.parentElement;
+                let containerWidth = container.clientWidth;
+                let containerHeight = container.clientHeight;
+                
+                if (containerWidth === 0) containerWidth = 1200;
+                if (containerHeight === 0) containerHeight = 500;
+                
+                this.canvas.width = containerWidth;
+                this.canvas.height = containerHeight;
+                
+                this.canvas.style.width = containerWidth + 'px';
+                this.canvas.style.height = containerHeight + 'px';
+                
+                const margin = 200;
+                const availableWidth = containerWidth - margin;
+                this.scale = availableWidth / this.systemLength;
+                
+                this.originX = 100;
+                this.originY = containerHeight / 2;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('singleLensType').addEventListener('change', (e) => {
+                    this.lensType = e.target.value;
+                    this.updateFocalLengthConstraints();
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleSystemLength').addEventListener('input', (e) => {
+                    this.systemLength = parseFloat(e.target.value);
+                    this.updateCanvasSize();
+                    this.lensPosition = this.objectPosition + this.objectDistance;
+                    
+                    if (this.lensPosition > this.systemLength - 2) {
+                        this.objectDistance = this.systemLength - 2 - this.objectPosition;
+                        this.lensPosition = this.objectPosition + this.objectDistance;
+                        document.getElementById('singleObjectDistance').value = this.objectDistance.toFixed(1);
+                    }
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleObjectDistance').addEventListener('input', (e) => {
+                    this.objectDistance = parseFloat(e.target.value);
+                    this.lensPosition = this.objectPosition + this.objectDistance;
+                    
+                    if (this.lensPosition > this.systemLength - 2) {
+                        this.objectDistance = this.systemLength - 2 - this.objectPosition;
+                        this.lensPosition = this.objectPosition + this.objectDistance;
+                        e.target.value = this.objectDistance.toFixed(1);
+                    }
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleFocalLength').addEventListener('input', (e) => {
+                    this.focalLength = parseFloat(e.target.value);
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleObjectHeight').addEventListener('input', (e) => {
+                    this.objectHeight = parseFloat(e.target.value);
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleImageArrowScale').addEventListener('input', (e) => {
+                    this.imageArrowScale = parseFloat(e.target.value);
+                    document.getElementById('singleArrowScaleValue').textContent = this.imageArrowScale.toFixed(2) + 'x';
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleGridDensity').addEventListener('input', (e) => {
+                    this.gridDensity = parseFloat(e.target.value);
+                    document.getElementById('singleGridDensityValue').textContent = this.gridDensity.toFixed(1) + 'x';
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('singleTextScale').addEventListener('input', (e) => {
+                    this.textScale = parseFloat(e.target.value);
+                    document.getElementById('singleTextScaleValue').textContent = this.textScale.toFixed(1) + 'x';
+                    this.updateDisplay();
+                });
+                
+                ['singleShowRays', 'singleShowRayArrows', 'singleShowFocalPoints', 'singleShowGrid', 'singleShowImageArrow'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        this.updateDisplay();
+                    });
+                });
+                
+                document.getElementById('singleDownloadBtn').addEventListener('click', () => {
+                    this.downloadCanvasAsJPG();
+                });
+                
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+                this.canvas.addEventListener('mouseleave', () => this.handleMouseUp());
+                this.canvas.addEventListener('wheel', (e) => this.handleMouseWheel(e));
+                
+                window.addEventListener('resize', () => {
+                    this.updateCanvasSize();
+                    this.updateDisplay();
+                });
+                
+                this.updateFocalLengthConstraints();
+            }
+            
+            downloadCanvasAsJPG() {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(this.canvas, 0, 0);
+                
+                const dataURL = tempCanvas.toDataURL('image/jpeg', 0.9);
+                const link = document.createElement('a');
+                link.download = `single_lens_system_${new Date().getTime()}.jpg`;
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            handleMouseWheel(e) {
+                e.preventDefault();
+                const zoomFactor = 0.1;
+                if (e.deltaY < 0) {
+                    this.verticalScale = Math.min(this.verticalScale + zoomFactor, 3.0);
+                } else {
+                    this.verticalScale = Math.max(this.verticalScale - zoomFactor, 0.3);
+                }
+                this.updateDisplay();
+            }
+            
+            updateFocalLengthConstraints() {
+                const focalLengthInput = document.getElementById('singleFocalLength');
+                
+                if (this.lensType === 'convex') {
+                    focalLengthInput.min = "1";
+                    focalLengthInput.max = "30";
+                    if (this.focalLength < 0) {
+                        this.focalLength = 5;
+                        focalLengthInput.value = this.focalLength;
+                    }
+                } else {
+                    focalLengthInput.min = "-30";
+                    focalLengthInput.max = "-1";
+                    if (this.focalLength > 0) {
+                        this.focalLength = -5;
+                        focalLengthInput.value = this.focalLength;
+                    }
+                }
+            }
+            
+            handleMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const lensScreenX = this.originX + this.lensPosition * this.scale;
+                
+                if (Math.abs(x - lensScreenX) < 20 && Math.abs(y - this.originY) < 60) {
+                    this.isDragging = true;
+                    this.dragOffset = x - lensScreenX;
+                    this.canvas.style.cursor = 'grabbing';
+                }
+            }
+            
+            handleMouseMove(e) {
+                if (this.isDragging) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    
+                    const newLensPos = (x - this.dragOffset - this.originX) / this.scale;
+                    this.lensPosition = Math.max(this.objectPosition + 2, 
+                                               Math.min(this.systemLength - 2, newLensPos));
+                    
+                    this.objectDistance = this.lensPosition - this.objectPosition;
+                    document.getElementById('singleObjectDistance').value = this.objectDistance.toFixed(1);
+                    
+                    this.updateDisplay();
+                } else {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const lensScreenX = this.originX + this.lensPosition * this.scale;
+                    
+                    if (Math.abs(x - lensScreenX) < 20 && Math.abs(y - this.originY) < 60) {
+                        this.canvas.style.cursor = 'grab';
+                    } else {
+                        this.canvas.style.cursor = 'crosshair';
+                    }
+                }
+            }
+            
+            handleMouseUp() {
+                this.isDragging = false;
+                this.canvas.style.cursor = 'crosshair';
+            }
+            
+            calculateImageProperties() {
+                const objectDistance = this.objectDistance;
+                let imageDistance, magnification;
+                
+                if (this.lensType === 'convex') {
+                    const f = Math.abs(this.focalLength);
+                    if (Math.abs(objectDistance - f) < 0.001) {
+                        return { imageDistance: Infinity, magnification: Infinity, isReal: false };
+                    }
+                    
+                    imageDistance = (f * objectDistance) / (objectDistance - f);
+                    magnification = -imageDistance / objectDistance;
+                } else {
+                    const f = -Math.abs(this.focalLength);
+                    imageDistance = (f * objectDistance) / (objectDistance - f);
+                    magnification = -imageDistance / objectDistance;
+                }
+                
+                const isReal = imageDistance > 0;
+                const isUpright = magnification > 0;
+                
+                return {
+                    imageDistance,
+                    magnification,
+                    isReal,
+                    isUpright,
+                    imagePosition: this.lensPosition + imageDistance
+                };
+            }
+            
+            drawGrid() {
+                if (!document.getElementById('singleShowGrid').checked) return;
+                
+                const systemEndX = this.originX + this.systemLength * this.scale;
+                
+                this.ctx.strokeStyle = '#f0f0f0';
+                this.ctx.lineWidth = 1;
+                
+                const baseGridLines = 15;
+                const adjustedGridLines = Math.round(baseGridLines * this.gridDensity);
+                const gridSpacing = Math.ceil(this.systemLength / adjustedGridLines / 5) * 5;
+                
+                for (let i = 0; i <= this.systemLength; i += gridSpacing) {
+                    const x = this.originX + i * this.scale;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 50);
+                    this.ctx.lineTo(x, this.canvas.height - 50);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.strokeStyle = '#d0d0d0';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(systemEndX, 50);
+                this.ctx.lineTo(systemEndX, this.canvas.height - 50);
+                this.ctx.stroke();
+                
+                this.ctx.strokeStyle = '#f0f0f0';
+                this.ctx.lineWidth = 1;
+                const baseVerticalSpacing = 2;
+                const verticalGridSpacing = baseVerticalSpacing / (this.verticalScale * this.gridDensity);
+                
+                for (let i = -10; i <= 10; i += verticalGridSpacing) {
+                    const y = this.originY + i * this.scale * this.verticalScale;
+                    if (y > 50 && y < this.canvas.height - 50) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.originX, y);
+                        this.ctx.lineTo(systemEndX, y);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            drawAxis() {
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                
+                const systemEndX = this.originX + this.systemLength * this.scale;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.originX - 20, this.originY);
+                this.ctx.lineTo(systemEndX + 20, this.originY);
+                this.ctx.stroke();
+                
+                this.ctx.font = `${12 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#666';
+                this.ctx.textAlign = 'center';
+                
+                const desiredMarks = 8;
+                const stepSize = Math.ceil(this.systemLength / desiredMarks / 5) * 5;
+                
+                for (let i = 0; i <= this.systemLength; i += stepSize) {
+                    const x = this.originX + i * this.scale;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, this.originY - 5);
+                    this.ctx.lineTo(x, this.originY + 5);
+                    this.ctx.stroke();
+                    this.ctx.fillText(i + 'cm', x, this.originY + 20);
+                }
+                
+                this.ctx.strokeStyle = '#666';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(systemEndX, this.originY - 8);
+                this.ctx.lineTo(systemEndX, this.originY + 8);
+                this.ctx.stroke();
+                this.ctx.fillText(this.systemLength + 'cm', systemEndX, this.originY + 20);
+            }
+            
+            drawObject() {
+                const objX = this.originX + this.objectPosition * this.scale;
+                const objHeight = this.objectHeight * this.scale * this.verticalScale;
+                
+                this.ctx.strokeStyle = '#ff4444';
+                this.ctx.fillStyle = '#ff4444';
+                this.ctx.lineWidth = 3;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(objX, this.originY);
+                this.ctx.lineTo(objX, this.originY - objHeight);
+                this.ctx.stroke();
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(objX, this.originY - objHeight);
+                this.ctx.lineTo(objX - 8, this.originY - objHeight + 15);
+                this.ctx.lineTo(objX + 8, this.originY - objHeight + 15);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                this.ctx.font = `${14 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#ff4444';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('Object', objX, this.originY + 35);
+            }
+            
+            drawLens() {
+                const lensX = this.originX + this.lensPosition * this.scale;
+                const baseLensHeight = 80;
+                const lensHeight = Math.max(baseLensHeight, this.objectHeight * this.scale * 2.5) * this.verticalScale;
+                const lensWidth = 12;
+                
+                this.ctx.strokeStyle = '#2196F3';
+                this.ctx.fillStyle = '#E3F2FD';
+                this.ctx.lineWidth = 3;
+                
+                if (this.lensType === 'convex') {
+                    this.ctx.beginPath();
+                    
+                    const topY = this.originY - lensHeight/2;
+                    const bottomY = this.originY + lensHeight/2;
+                    const leftX = lensX - lensWidth;
+                    const rightX = lensX + lensWidth;
+                    
+                    this.ctx.moveTo(lensX, topY);
+                    
+                    this.ctx.bezierCurveTo(
+                        rightX + 8, topY + lensHeight * 0.1,
+                        rightX + 8, bottomY - lensHeight * 0.1,
+                        lensX, bottomY
+                    );
+                    
+                    this.ctx.bezierCurveTo(
+                        leftX - 8, bottomY - lensHeight * 0.1,
+                        leftX - 8, topY + lensHeight * 0.1,
+                        lensX, topY
+                    );
+                    
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                } else {
+                    const concaveWidth = 25;
+                    const concaveDepth = 15;
+                    
+                    this.ctx.beginPath();
+                    
+                    this.ctx.moveTo(lensX, this.originY - lensHeight/2);
+                    this.ctx.lineTo(lensX + concaveWidth, this.originY - lensHeight/2);
+                    
+                    this.ctx.quadraticCurveTo(
+                        lensX + concaveWidth - concaveDepth, this.originY,
+                        lensX + concaveWidth, this.originY + lensHeight/2
+                    );
+                    
+                    this.ctx.lineTo(lensX, this.originY + lensHeight/2);
+                    this.ctx.lineTo(lensX - concaveWidth, this.originY + lensHeight/2);
+                    
+                    this.ctx.quadraticCurveTo(
+                        lensX - concaveWidth + concaveDepth, this.originY,
+                        lensX - concaveWidth, this.originY - lensHeight/2
+                    );
+                    
+                    this.ctx.lineTo(lensX, this.originY - lensHeight/2);
+                    
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.strokeStyle = '#1976D2';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(lensX, this.originY - lensHeight/2 - 10);
+                this.ctx.lineTo(lensX, this.originY + lensHeight/2 + 10);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                this.ctx.font = `${14 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#1976D2';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(this.lensType === 'convex' ? 'Convex Lens' : 'Concave Lens', 
+                                lensX, this.originY + lensHeight/2 + 25);
+            }
+            
+            drawFocalPoints() {
+                if (!document.getElementById('singleShowFocalPoints').checked) return;
+                
+                const lensX = this.originX + this.lensPosition * this.scale;
+                const f = Math.abs(this.focalLength);
+                
+                this.ctx.fillStyle = '#FF9800';
+                this.ctx.font = `${12 * this.textScale}px Arial`;
+                this.ctx.textAlign = 'center';
+                
+                const f1X = lensX - f * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f1X, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F', f1X, this.originY - 10);
+                
+                const f2X = lensX + f * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f2X, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F\'', f2X, this.originY - 10);
+            }
+            
+            drawRays() {
+                if (!document.getElementById('singleShowRays').checked) return;
+                
+                const objX = this.originX + this.objectPosition * this.scale;
+                const lensX = this.originX + this.lensPosition * this.scale;
+                const objHeight = this.objectHeight * this.scale * this.verticalScale;
+                
+                const imageProps = this.calculateImageProperties();
+                
+                if (imageProps.imageDistance === Infinity) return;
+                
+                const imgX = this.originX + imageProps.imagePosition * this.scale;
+                const imgHeight = Math.abs(imageProps.magnification) * this.objectHeight * this.scale * this.verticalScale;
+                const imgY = imageProps.isUpright ? this.originY - imgHeight : this.originY + imgHeight;
+                
+                this.ctx.strokeStyle = '#4CAF50';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([]);
+                
+                const showArrows = document.getElementById('singleShowRayArrows').checked;
+                
+                if (this.lensType === 'convex') {
+                    if (showArrows) {
+                        this.drawArrowRay(objX, this.originY - objHeight, lensX, this.originY - objHeight);
+                        this.drawArrowRay(lensX, this.originY - objHeight, imgX, imgY);
+                        
+                        this.drawArrowRay(objX, this.originY - objHeight, lensX, this.originY);
+                        this.drawArrowRay(lensX, this.originY, imgX, imgY);
+                    } else {
+                        this.drawSimpleRay(objX, this.originY - objHeight, lensX, this.originY - objHeight);
+                        this.drawSimpleRay(lensX, this.originY - objHeight, imgX, imgY);
+                        
+                        this.drawSimpleRay(objX, this.originY - objHeight, lensX, this.originY);
+                        this.drawSimpleRay(lensX, this.originY, imgX, imgY);
+                    }
+                } else {
+                    const f = Math.abs(this.focalLength);
+                    const f1X = lensX - f * this.scale;
+                    
+                    if (showArrows) {
+                        this.drawArrowRay(objX, this.originY - objHeight, lensX, this.originY - objHeight);
+                        
+                        const lensContactY = this.originY - objHeight;
+                        const slope1 = (lensContactY - this.originY) / (lensX - f1X);
+                        
+                        const extendedY1 = lensContactY + slope1 * (imgX - lensX);
+                        this.drawArrowRay(lensX, lensContactY, imgX, extendedY1);
+                        
+                        this.drawArrowRay(objX, this.originY - objHeight, lensX, this.originY);
+                        this.drawArrowRay(lensX, this.originY, imgX, imgY);
+                    } else {
+                        this.drawSimpleRay(objX, this.originY - objHeight, lensX, this.originY - objHeight);
+                        
+                        const lensContactY = this.originY - objHeight;
+                        const slope1 = (lensContactY - this.originY) / (lensX - f1X);
+                        
+                        const extendedY1 = lensContactY + slope1 * (imgX - lensX);
+                        this.drawSimpleRay(lensX, lensContactY, imgX, extendedY1);
+                        
+                        this.drawSimpleRay(objX, this.originY - objHeight, lensX, this.originY);
+                        this.drawSimpleRay(lensX, this.originY, imgX, imgY);
+                    }
+                    
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.strokeStyle = '#4CAF50';
+                    this.ctx.globalAlpha = 0.6;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(f1X, this.originY);
+                    this.ctx.lineTo(lensX, this.originY - objHeight);
+                    this.ctx.stroke();
+                    
+                    this.ctx.setLineDash([]);
+                    this.ctx.globalAlpha = 1.0;
+                }
+            }
+            
+            drawArrowRay(x1, y1, x2, y2) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y1);
+                this.ctx.lineTo(x2, y2);
+                this.ctx.stroke();
+                
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const arrowLength = 8;
+                const arrowAngle = Math.PI / 6;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(x2, y2);
+                this.ctx.lineTo(
+                    x2 - arrowLength * Math.cos(angle - arrowAngle),
+                    y2 - arrowLength * Math.sin(angle - arrowAngle)
+                );
+                this.ctx.moveTo(x2, y2);
+                this.ctx.lineTo(
+                    x2 - arrowLength * Math.cos(angle + arrowAngle),
+                    y2 - arrowLength * Math.sin(angle + arrowAngle)
+                );
+                this.ctx.stroke();
+            }
+            
+            drawSimpleRay(x1, y1, x2, y2) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y1);
+                this.ctx.lineTo(x2, y2);
+                this.ctx.stroke();
+            }
+            
+            drawSimpleRay(x1, y1, x2, y2) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y1);
+                this.ctx.lineTo(x2, y2);
+                this.ctx.stroke();
+            }
+            
+            drawImage() {
+                if (!document.getElementById('singleShowImageArrow').checked) return;
+                
+                const imageProps = this.calculateImageProperties();
+                
+                if (imageProps.imageDistance === Infinity || 
+                    Math.abs(imageProps.imagePosition) > this.systemLength + 10) return;
+                
+                const imgX = this.originX + imageProps.imagePosition * this.scale;
+                const imgHeight = Math.abs(imageProps.magnification) * this.objectHeight * this.scale * this.verticalScale;
+                
+                const displayHeight = Math.max(15, imgHeight);
+                const arrowSize = Math.max(6, displayHeight * 0.3) * this.imageArrowScale;
+                
+                this.ctx.strokeStyle = imageProps.isReal ? '#9C27B0' : '#FF5722';
+                this.ctx.fillStyle = imageProps.isReal ? '#9C27B0' : '#FF5722';
+                this.ctx.lineWidth = imageProps.isReal ? 3 : 2;
+                
+                if (!imageProps.isReal) {
+                    this.ctx.setLineDash([5, 5]);
+                }
+                
+                const startY = this.originY;
+                const endY = imageProps.isUpright ? 
+                    this.originY - displayHeight : 
+                    this.originY + displayHeight;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(imgX, startY);
+                this.ctx.lineTo(imgX, endY);
+                this.ctx.stroke();
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(imgX, endY);
+                if (imageProps.isUpright) {
+                    this.ctx.lineTo(imgX - arrowSize, endY + arrowSize * 2);
+                    this.ctx.lineTo(imgX + arrowSize, endY + arrowSize * 2);
+                } else {
+                    this.ctx.lineTo(imgX - arrowSize, endY - arrowSize * 2);
+                    this.ctx.lineTo(imgX + arrowSize, endY - arrowSize * 2);
+                }
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                this.ctx.setLineDash([]);
+                
+                this.ctx.font = `${14 * this.textScale}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(imageProps.isReal ? 'Real Image' : 'Virtual Image', imgX, this.originY + 50);
+            }
+            
+            updateDisplay() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.canvas.width === 0 || this.canvas.height === 0) {
+                    return;
+                }
+                
+                this.drawGrid();
+                this.drawAxis();
+                this.drawFocalPoints();
+                this.drawObject();
+                this.drawLens();
+                this.drawRays();
+                this.drawImage();
+                
+                this.updateInfo();
+            }
+            
+            updateInfo() {
+                const imageProps = this.calculateImageProperties();
+                
+                if (imageProps.imageDistance === Infinity) {
+                    document.getElementById('singleImageDistanceOutput').value = '∞';
+                    document.getElementById('singleMagnificationOutput').value = '∞';
+                    document.getElementById('singleImageTypeOutput').value = 'Parallel rays';
+                } else {
+                    document.getElementById('singleImageDistanceOutput').value = imageProps.imageDistance.toFixed(1);
+                    document.getElementById('singleMagnificationOutput').value = imageProps.magnification.toFixed(2);
+                    
+                    let imageType = '';
+                    imageType += imageProps.isReal ? 'Real, ' : 'Virtual, ';
+                    imageType += imageProps.isUpright ? 'Upright' : 'Inverted';
+                    imageType += Math.abs(imageProps.magnification) > 1 ? ', Magnified' : ', Reduced';
+                    
+                    document.getElementById('singleImageTypeOutput').value = imageType;
+                }
+            }
+        }
+
+        // Double Lens System Class
+        class DoubleLensSystem {
+            constructor() {
+                this.canvas = document.getElementById('doubleOpticsCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // System parameters
+                this.systemLength = 50;
+                this.objectHeight = 3;
+                this.objectDistance = 10;
+                this.objectPosition = 0;
+                
+                // Lens parameters
+                this.lens1Type = 'convex';
+                this.lens1Focal = 8;
+                this.lens1Position = this.objectPosition + this.objectDistance;
+                
+                this.lens2Type = 'convex';
+                this.lens2Focal = 12;
+                this.lensDistance = 15; // Distance from lens1 to lens2
+                this.lens2Position = this.lens1Position + this.lensDistance;
+                
+                // UI parameters
+                this.imageArrowScale = 1.0;
+                this.gridDensity = 1.0;
+                this.textScale = 1.0;
+                this.verticalScale = 1.0;
+                
+                // Interaction
+                this.isDragging = false;
+                this.dragTarget = null;
+                this.dragOffset = 0;
+                
+                this.updateCanvasSize();
+                this.setupEventListeners();
+                this.updateDisplay();
+            }
+            
+            updateCanvasSize() {
+                const container = this.canvas.parentElement;
+                let containerWidth = container.clientWidth;
+                let containerHeight = container.clientHeight;
+                
+                if (containerWidth === 0) containerWidth = 1200;
+                if (containerHeight === 0) containerHeight = 500;
+                
+                this.canvas.width = containerWidth;
+                this.canvas.height = containerHeight;
+                
+                this.canvas.style.width = containerWidth + 'px';
+                this.canvas.style.height = containerHeight + 'px';
+                
+                const margin = 200;
+                const availableWidth = containerWidth - margin;
+                this.scale = availableWidth / this.systemLength;
+                
+                this.originX = 100;
+                this.originY = containerHeight / 2;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('doubleSystemLength').addEventListener('input', (e) => {
+                    this.systemLength = parseFloat(e.target.value);
+                    this.updateCanvasSize();
+                    
+                    // Adjust positions if they exceed system bounds
+                    if (this.lens2Position > this.systemLength - 2) {
+                        this.lensDistance = Math.max(5, this.systemLength - 2 - this.lens1Position);
+                        this.lens2Position = this.lens1Position + this.lensDistance;
+                        document.getElementById('doubleLensDistance').value = this.lensDistance.toFixed(1);
+                    }
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleObjectDistance').addEventListener('input', (e) => {
+                    this.objectDistance = parseFloat(e.target.value);
+                    this.lens1Position = this.objectPosition + this.objectDistance;
+                    this.lens2Position = this.lens1Position + this.lensDistance;
+                    
+                    if (this.lens2Position > this.systemLength - 2) {
+                        this.lensDistance = Math.max(5, this.systemLength - 2 - this.lens1Position);
+                        this.lens2Position = this.lens1Position + this.lensDistance;
+                        document.getElementById('doubleLensDistance').value = this.lensDistance.toFixed(1);
+                    }
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleObjectHeight').addEventListener('input', (e) => {
+                    this.objectHeight = parseFloat(e.target.value);
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleLens1Type').addEventListener('change', (e) => {
+                    this.lens1Type = e.target.value;
+                    this.updateFocalLengthConstraints();
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleLens1Focal').addEventListener('input', (e) => {
+                    this.lens1Focal = parseFloat(e.target.value);
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleLens2Type').addEventListener('change', (e) => {
+                    this.lens2Type = e.target.value;
+                    this.updateFocalLengthConstraints();
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleLens2Focal').addEventListener('input', (e) => {
+                    this.lens2Focal = parseFloat(e.target.value);
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleLensDistance').addEventListener('input', (e) => {
+                    this.lensDistance = parseFloat(e.target.value);
+                    this.lens2Position = this.lens1Position + this.lensDistance;
+                    
+                    if (this.lens2Position > this.systemLength - 2) {
+                        this.lensDistance = this.systemLength - 2 - this.lens1Position;
+                        this.lens2Position = this.lens1Position + this.lensDistance;
+                        e.target.value = this.lensDistance.toFixed(1);
+                    }
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleImageArrowScale').addEventListener('input', (e) => {
+                    this.imageArrowScale = parseFloat(e.target.value);
+                    document.getElementById('doubleArrowScaleValue').textContent = this.imageArrowScale.toFixed(2) + 'x';
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleGridDensity').addEventListener('input', (e) => {
+                    this.gridDensity = parseFloat(e.target.value);
+                    document.getElementById('doubleGridDensityValue').textContent = this.gridDensity.toFixed(1) + 'x';
+                    this.updateDisplay();
+                });
+                
+                document.getElementById('doubleTextScale').addEventListener('input', (e) => {
+                    this.textScale = parseFloat(e.target.value);
+                    document.getElementById('doubleTextScaleValue').textContent = this.textScale.toFixed(1) + 'x';
+                    this.updateDisplay();
+                });
+                
+                ['doubleShowRays', 'doubleShowRayArrows', 'doubleShowFocalPoints', 'doubleShowGrid', 'doubleShowIntermediateImage', 'doubleShowFinalImage'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        this.updateDisplay();
+                    });
+                });
+                
+                document.getElementById('doubleDownloadBtn').addEventListener('click', () => {
+                    this.downloadCanvasAsJPG();
+                });
+                
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+                this.canvas.addEventListener('mouseleave', () => this.handleMouseUp());
+                this.canvas.addEventListener('wheel', (e) => this.handleMouseWheel(e));
+                
+                window.addEventListener('resize', () => {
+                    this.updateCanvasSize();
+                    this.updateDisplay();
+                });
+                
+                this.updateFocalLengthConstraints();
+            }
+            
+            downloadCanvasAsJPG() {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(this.canvas, 0, 0);
+                
+                const dataURL = tempCanvas.toDataURL('image/jpeg', 0.9);
+                const link = document.createElement('a');
+                link.download = `double_lens_system_${new Date().getTime()}.jpg`;
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            handleMouseWheel(e) {
+                e.preventDefault();
+                const zoomFactor = 0.1;
+                if (e.deltaY < 0) {
+                    this.verticalScale = Math.min(this.verticalScale + zoomFactor, 3.0);
+                } else {
+                    this.verticalScale = Math.max(this.verticalScale - zoomFactor, 0.3);
+                }
+                this.updateDisplay();
+            }
+            
+            updateFocalLengthConstraints() {
+                const lens1Input = document.getElementById('doubleLens1Focal');
+                const lens2Input = document.getElementById('doubleLens2Focal');
+                
+                // Lens 1 constraints
+                if (this.lens1Type === 'convex') {
+                    lens1Input.min = "1";
+                    lens1Input.max = "30";
+                    if (this.lens1Focal < 0) {
+                        this.lens1Focal = 8;
+                        lens1Input.value = this.lens1Focal;
+                    }
+                } else {
+                    lens1Input.min = "-30";
+                    lens1Input.max = "-1";
+                    if (this.lens1Focal > 0) {
+                        this.lens1Focal = -8;
+                        lens1Input.value = this.lens1Focal;
+                    }
+                }
+                
+                // Lens 2 constraints
+                if (this.lens2Type === 'convex') {
+                    lens2Input.min = "1";
+                    lens2Input.max = "30";
+                    if (this.lens2Focal < 0) {
+                        this.lens2Focal = 12;
+                        lens2Input.value = this.lens2Focal;
+                    }
+                } else {
+                    lens2Input.min = "-30";
+                    lens2Input.max = "-1";
+                    if (this.lens2Focal > 0) {
+                        this.lens2Focal = -12;
+                        lens2Input.value = this.lens2Focal;
+                    }
+                }
+            }
+            
+            handleMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const lens1ScreenX = this.originX + this.lens1Position * this.scale;
+                const lens2ScreenX = this.originX + this.lens2Position * this.scale;
+                
+                if (Math.abs(x - lens1ScreenX) < 20 && Math.abs(y - this.originY) < 60) {
+                    this.isDragging = true;
+                    this.dragTarget = 'lens1';
+                    this.dragOffset = x - lens1ScreenX;
+                    this.canvas.style.cursor = 'grabbing';
+                } else if (Math.abs(x - lens2ScreenX) < 20 && Math.abs(y - this.originY) < 60) {
+                    this.isDragging = true;
+                    this.dragTarget = 'lens2';
+                    this.dragOffset = x - lens2ScreenX;
+                    this.canvas.style.cursor = 'grabbing';
+                }
+            }
+            
+            handleMouseMove(e) {
+                if (this.isDragging) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    
+                    if (this.dragTarget === 'lens1') {
+                        const newLens1Pos = (x - this.dragOffset - this.originX) / this.scale;
+                        this.lens1Position = Math.max(this.objectPosition + 2, 
+                                                    Math.min(this.systemLength - this.lensDistance - 2, newLens1Pos));
+                        
+                        this.objectDistance = this.lens1Position - this.objectPosition;
+                        this.lens2Position = this.lens1Position + this.lensDistance;
+                        
+                        document.getElementById('doubleObjectDistance').value = this.objectDistance.toFixed(1);
+                    } else if (this.dragTarget === 'lens2') {
+                        const newLens2Pos = (x - this.dragOffset - this.originX) / this.scale;
+                        this.lens2Position = Math.max(this.lens1Position + 5, 
+                                                    Math.min(this.systemLength - 2, newLens2Pos));
+                        
+                        this.lensDistance = this.lens2Position - this.lens1Position;
+                        document.getElementById('doubleLensDistance').value = this.lensDistance.toFixed(1);
+                    }
+                    
+                    this.updateDisplay();
+                } else {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const lens1ScreenX = this.originX + this.lens1Position * this.scale;
+                    const lens2ScreenX = this.originX + this.lens2Position * this.scale;
+                    
+                    if ((Math.abs(x - lens1ScreenX) < 20 && Math.abs(y - this.originY) < 60) ||
+                        (Math.abs(x - lens2ScreenX) < 20 && Math.abs(y - this.originY) < 60)) {
+                        this.canvas.style.cursor = 'grab';
+                    } else {
+                        this.canvas.style.cursor = 'crosshair';
+                    }
+                }
+            }
+            
+            handleMouseUp() {
+                this.isDragging = false;
+                this.dragTarget = null;
+                this.canvas.style.cursor = 'crosshair';
+            }
+            
+            calculateDoubleLensSystem() {
+                // Step 1: Object -> Lens 1 -> Intermediate Image
+                const objectDistance1 = this.objectDistance;
+                let imageDistance1, magnification1;
+                
+                if (this.lens1Type === 'convex') {
+                    const f1 = Math.abs(this.lens1Focal);
+                    if (Math.abs(objectDistance1 - f1) < 0.001) {
+                        return { 
+                            lens1Mag: Infinity, 
+                            lens2Mag: 0, 
+                            totalMag: Infinity, 
+                            finalImageDistance: Infinity,
+                            finalImagePosition: Infinity,
+                            isReal: false,
+                            isUpright: false
+                        };
+                    }
+                    imageDistance1 = (f1 * objectDistance1) / (objectDistance1 - f1);
+                    magnification1 = -imageDistance1 / objectDistance1;
+                } else {
+                    const f1 = -Math.abs(this.lens1Focal);
+                    imageDistance1 = (f1 * objectDistance1) / (objectDistance1 - f1);
+                    magnification1 = -imageDistance1 / objectDistance1;
+                }
+                
+                const intermediateImagePosition = this.lens1Position + imageDistance1;
+                
+                // Step 2: Intermediate Image -> Lens 2 -> Final Image
+                const objectDistance2 = this.lens2Position - intermediateImagePosition;
+                
+                // If intermediate image is behind lens 2, object distance is negative
+                const actualObjectDistance2 = Math.abs(objectDistance2);
+                let imageDistance2, magnification2;
+                
+                if (this.lens2Type === 'convex') {
+                    const f2 = Math.abs(this.lens2Focal);
+                    if (Math.abs(actualObjectDistance2 - f2) < 0.001) {
+                        return { 
+                            lens1Mag: magnification1, 
+                            lens2Mag: Infinity, 
+                            totalMag: Infinity, 
+                            finalImageDistance: Infinity,
+                            finalImagePosition: Infinity,
+                            isReal: false,
+                            isUpright: magnification1 > 0
+                        };
+                    }
+                    imageDistance2 = (f2 * actualObjectDistance2) / (actualObjectDistance2 - f2);
+                    magnification2 = -imageDistance2 / actualObjectDistance2;
+                    
+                    // Adjust sign if intermediate image is behind lens 2
+                    if (objectDistance2 < 0) {
+                        magnification2 = -magnification2;
+                    }
+                } else {
+                    const f2 = -Math.abs(this.lens2Focal);
+                    imageDistance2 = (f2 * actualObjectDistance2) / (actualObjectDistance2 - f2);
+                    magnification2 = -imageDistance2 / actualObjectDistance2;
+                    
+                    // Adjust sign if intermediate image is behind lens 2
+                    if (objectDistance2 < 0) {
+                        magnification2 = -magnification2;
+                    }
+                }
+                
+                const finalImagePosition = this.lens2Position + imageDistance2;
+                const totalMagnification = magnification1 * magnification2;
+                
+                return {
+                    lens1Mag: magnification1,
+                    lens2Mag: magnification2,
+                    totalMag: totalMagnification,
+                    finalImageDistance: imageDistance2,
+                    finalImagePosition: finalImagePosition,
+                    intermediateImagePosition: intermediateImagePosition,
+                    isReal: imageDistance2 > 0,
+                    isUpright: totalMagnification > 0
+                };
+            }
+            
+            drawGrid() {
+                if (!document.getElementById('doubleShowGrid').checked) return;
+                
+                const systemEndX = this.originX + this.systemLength * this.scale;
+                
+                this.ctx.strokeStyle = '#f0f0f0';
+                this.ctx.lineWidth = 1;
+                
+                const baseGridLines = 15;
+                const adjustedGridLines = Math.round(baseGridLines * this.gridDensity);
+                const gridSpacing = Math.ceil(this.systemLength / adjustedGridLines / 5) * 5;
+                
+                for (let i = 0; i <= this.systemLength; i += gridSpacing) {
+                    const x = this.originX + i * this.scale;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 50);
+                    this.ctx.lineTo(x, this.canvas.height - 50);
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.strokeStyle = '#d0d0d0';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(systemEndX, 50);
+                this.ctx.lineTo(systemEndX, this.canvas.height - 50);
+                this.ctx.stroke();
+                
+                this.ctx.strokeStyle = '#f0f0f0';
+                this.ctx.lineWidth = 1;
+                const baseVerticalSpacing = 2;
+                const verticalGridSpacing = baseVerticalSpacing / (this.verticalScale * this.gridDensity);
+                
+                for (let i = -10; i <= 10; i += verticalGridSpacing) {
+                    const y = this.originY + i * this.scale * this.verticalScale;
+                    if (y > 50 && y < this.canvas.height - 50) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.originX, y);
+                        this.ctx.lineTo(systemEndX, y);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            drawAxis() {
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+                
+                const systemEndX = this.originX + this.systemLength * this.scale;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.originX - 20, this.originY);
+                this.ctx.lineTo(systemEndX + 20, this.originY);
+                this.ctx.stroke();
+                
+                this.ctx.font = `${12 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#666';
+                this.ctx.textAlign = 'center';
+                
+                const desiredMarks = 8;
+                const stepSize = Math.ceil(this.systemLength / desiredMarks / 5) * 5;
+                
+                for (let i = 0; i <= this.systemLength; i += stepSize) {
+                    const x = this.originX + i * this.scale;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, this.originY - 5);
+                    this.ctx.lineTo(x, this.originY + 5);
+                    this.ctx.stroke();
+                    this.ctx.fillText(i + 'cm', x, this.originY + 20);
+                }
+                
+                this.ctx.strokeStyle = '#666';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(systemEndX, this.originY - 8);
+                this.ctx.lineTo(systemEndX, this.originY + 8);
+                this.ctx.stroke();
+                this.ctx.fillText(this.systemLength + 'cm', systemEndX, this.originY + 20);
+            }
+            
+            drawObject() {
+                const objX = this.originX + this.objectPosition * this.scale;
+                const objHeight = this.objectHeight * this.scale * this.verticalScale;
+                
+                this.ctx.strokeStyle = '#ff4444';
+                this.ctx.fillStyle = '#ff4444';
+                this.ctx.lineWidth = 3;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(objX, this.originY);
+                this.ctx.lineTo(objX, this.originY - objHeight);
+                this.ctx.stroke();
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(objX, this.originY - objHeight);
+                this.ctx.lineTo(objX - 8, this.originY - objHeight + 15);
+                this.ctx.lineTo(objX + 8, this.originY - objHeight + 15);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                this.ctx.font = `${14 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#ff4444';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText('Object', objX, this.originY + 35);
+            }
+            
+            drawLens(lensX, lensType, label) {
+                const baseLensHeight = 80;
+                const lensHeight = Math.max(baseLensHeight, this.objectHeight * this.scale * 2.5) * this.verticalScale;
+                const lensWidth = 12;
+                
+                this.ctx.strokeStyle = '#2196F3';
+                this.ctx.fillStyle = '#E3F2FD';
+                this.ctx.lineWidth = 3;
+                
+                if (lensType === 'convex') {
+                    this.ctx.beginPath();
+                    
+                    const topY = this.originY - lensHeight/2;
+                    const bottomY = this.originY + lensHeight/2;
+                    const leftX = lensX - lensWidth;
+                    const rightX = lensX + lensWidth;
+                    
+                    this.ctx.moveTo(lensX, topY);
+                    
+                    this.ctx.bezierCurveTo(
+                        rightX + 8, topY + lensHeight * 0.1,
+                        rightX + 8, bottomY - lensHeight * 0.1,
+                        lensX, bottomY
+                    );
+                    
+                    this.ctx.bezierCurveTo(
+                        leftX - 8, bottomY - lensHeight * 0.1,
+                        leftX - 8, topY + lensHeight * 0.1,
+                        lensX, topY
+                    );
+                    
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                } else {
+                    const concaveWidth = 25;
+                    const concaveDepth = 15;
+                    
+                    this.ctx.beginPath();
+                    
+                    this.ctx.moveTo(lensX, this.originY - lensHeight/2);
+                    this.ctx.lineTo(lensX + concaveWidth, this.originY - lensHeight/2);
+                    
+                    this.ctx.quadraticCurveTo(
+                        lensX + concaveWidth - concaveDepth, this.originY,
+                        lensX + concaveWidth, this.originY + lensHeight/2
+                    );
+                    
+                    this.ctx.lineTo(lensX, this.originY + lensHeight/2);
+                    this.ctx.lineTo(lensX - concaveWidth, this.originY + lensHeight/2);
+                    
+                    this.ctx.quadraticCurveTo(
+                        lensX - concaveWidth + concaveDepth, this.originY,
+                        lensX - concaveWidth, this.originY - lensHeight/2
+                    );
+                    
+                    this.ctx.lineTo(lensX, this.originY - lensHeight/2);
+                    
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                }
+                
+                // Center axis
+                this.ctx.strokeStyle = '#1976D2';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(lensX, this.originY - lensHeight/2 - 10);
+                this.ctx.lineTo(lensX, this.originY + lensHeight/2 + 10);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                // Label
+                this.ctx.font = `${14 * this.textScale}px Arial`;
+                this.ctx.fillStyle = '#1976D2';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(label, lensX, this.originY + lensHeight/2 + 25);
+            }
+            
+            drawFocalPoints() {
+                if (!document.getElementById('doubleShowFocalPoints').checked) return;
+                
+                this.ctx.fillStyle = '#FF9800';
+                this.ctx.font = `${12 * this.textScale}px Arial`;
+                this.ctx.textAlign = 'center';
+                
+                // Lens 1 focal points
+                const lens1X = this.originX + this.lens1Position * this.scale;
+                const f1 = Math.abs(this.lens1Focal);
+                
+                const f1_leftX = lens1X - f1 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f1_leftX, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F1', f1_leftX, this.originY - 10);
+                
+                const f1_rightX = lens1X + f1 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f1_rightX, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F1\'', f1_rightX, this.originY - 10);
+                
+                // Lens 2 focal points
+                const lens2X = this.originX + this.lens2Position * this.scale;
+                const f2 = Math.abs(this.lens2Focal);
+                
+                const f2_leftX = lens2X - f2 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f2_leftX, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F2', f2_leftX, this.originY - 10);
+                
+                const f2_rightX = lens2X + f2 * this.scale;
+                this.ctx.beginPath();
+                this.ctx.arc(f2_rightX, this.originY, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.fillText('F2\'', f2_rightX, this.originY - 10);
+            }
+            
+            drawRays() {
+                // CRITICAL: "Show Ray Arrows" 체크박스로 전체 광선 표시/숨김 제어
+                if (!document.getElementById('doubleShowRayArrows').checked) {
+                    return; // 전체 광선을 그리지 않음
+                }
+                
+                const objX = this.originX + this.objectPosition * this.scale;
+                const lens1X = this.originX + this.lens1Position * this.scale;
+                const lens2X = this.originX + this.lens2Position * this.scale;
+                const objHeight = this.objectHeight * this.scale * this.verticalScale;
+                
+                const results = this.calculateDoubleLensSystem();
+                
+                if (results.totalMag === Infinity) return;
+                
+                // Calculate intermediate image position and height
+                const intermediateX = this.originX + results.intermediateImagePosition * this.scale;
+                const intermediateHeight = Math.abs(results.lens1Mag) * this.objectHeight * this.scale * this.verticalScale;
+                const intermediateY = results.lens1Mag > 0 ? 
+                    this.originY - intermediateHeight : this.originY + intermediateHeight;
+                
+                // Calculate final image position and height
+                const finalX = this.originX + results.finalImagePosition * this.scale;
+                const finalHeight = Math.abs(results.totalMag) * this.objectHeight * this.scale * this.verticalScale;
+                const finalY = results.isUpright ? 
+                    this.originY - finalHeight : this.originY + finalHeight;
+                
+                this.ctx.strokeStyle = '#4CAF50';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([]);
+                
+                // "Show Rays" 체크박스로 화살표 끝부분 표시/숨김 제어
+                const showArrowTips = document.getElementById('doubleShowRays').checked;
+                
+                // Ray 1: Parallel to axis, through focal point after lens 1
+                if (showArrowTips) {
+                    this.drawArrowRay(objX, this.originY - objHeight, lens1X, this.originY - objHeight);
+                    this.drawArrowRay(lens1X, this.originY - objHeight, intermediateX, intermediateY);
+                    
+                    // Continue ray from intermediate image to lens 2
+                    this.drawArrowRay(intermediateX, intermediateY, lens2X, intermediateY);
+                    this.drawArrowRay(lens2X, intermediateY, finalX, finalY);
+                    
+                    // Ray 2: Through center of lens 1
+                    this.drawArrowRay(objX, this.originY - objHeight, lens1X, this.originY);
+                    this.drawArrowRay(lens1X, this.originY, intermediateX, intermediateY);
+                    
+                    // Continue center ray from intermediate image to lens 2
+                    this.drawArrowRay(intermediateX, intermediateY, lens2X, this.originY);
+                    this.drawArrowRay(lens2X, this.originY, finalX, finalY);
+                } else {
+                    this.drawSimpleRay(objX, this.originY - objHeight, lens1X, this.originY - objHeight);
+                    this.drawSimpleRay(lens1X, this.originY - objHeight, intermediateX, intermediateY);
+                    
+                    // Continue ray from intermediate image to lens 2
+                    this.drawSimpleRay(intermediateX, intermediateY, lens2X, intermediateY);
+                    this.drawSimpleRay(lens2X, intermediateY, finalX, finalY);
+                    
+                    // Ray 2: Through center of lens 1
+                    this.drawSimpleRay(objX, this.originY - objHeight, lens1X, this.originY);
+                    this.drawSimpleRay(lens1X, this.originY, intermediateX, intermediateY);
+                    
+                    // Continue center ray from intermediate image to lens 2
+                    this.drawSimpleRay(intermediateX, intermediateY, lens2X, this.originY);
+                    this.drawSimpleRay(lens2X, this.originY, finalX, finalY);
+                }
+            }
+            
+            drawArrowRay(x1, y1, x2, y2) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y1);
+                this.ctx.lineTo(x2, y2);
+                this.ctx.stroke();
+                
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const arrowLength = 8;
+                const arrowAngle = Math.PI / 6;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(x2, y2);
+                this.ctx.lineTo(
+                    x2 - arrowLength * Math.cos(angle - arrowAngle),
+                    y2 - arrowLength * Math.sin(angle - arrowAngle)
+                );
+                this.ctx.moveTo(x2, y2);
+                this.ctx.lineTo(
+                    x2 - arrowLength * Math.cos(angle + arrowAngle),
+                    y2 - arrowLength * Math.sin(angle + arrowAngle)
+                );
+                this.ctx.stroke();
+            }
+            
+            drawImages() {
+                const results = this.calculateDoubleLensSystem();
+                
+                if (results.totalMag === Infinity) return;
+                
+                // Draw intermediate image (dashed line, lighter color)
+                if (document.getElementById('doubleShowIntermediateImage').checked && 
+                    results.intermediateImagePosition > 0 && results.intermediateImagePosition < this.systemLength + 10) {
+                    const intermediateX = this.originX + results.intermediateImagePosition * this.scale;
+                    const intermediateHeight = Math.abs(results.lens1Mag) * this.objectHeight * this.scale * this.verticalScale;
+                    const displayIntermediateHeight = Math.max(15, intermediateHeight);
+                    const intermediateArrowSize = Math.max(4, displayIntermediateHeight * 0.2);
+                    
+                    this.ctx.strokeStyle = '#FF9800';
+                    this.ctx.fillStyle = '#FF9800';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([3, 3]);
+                    this.ctx.globalAlpha = 0.7;
+                    
+                    const startY = this.originY;
+                    const endY = results.lens1Mag > 0 ? 
+                        this.originY - displayIntermediateHeight : 
+                        this.originY + displayIntermediateHeight;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(intermediateX, startY);
+                    this.ctx.lineTo(intermediateX, endY);
+                    this.ctx.stroke();
+                    
+                    // Arrow head
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(intermediateX, endY);
+                    if (results.lens1Mag > 0) {
+                        this.ctx.lineTo(intermediateX - intermediateArrowSize, endY + intermediateArrowSize * 2);
+                        this.ctx.lineTo(intermediateX + intermediateArrowSize, endY + intermediateArrowSize * 2);
+                    } else {
+                        this.ctx.lineTo(intermediateX - intermediateArrowSize, endY - intermediateArrowSize * 2);
+                        this.ctx.lineTo(intermediateX + intermediateArrowSize, endY - intermediateArrowSize * 2);
+                    }
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    
+                    this.ctx.font = `${12 * this.textScale}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('Intermediate Image', intermediateX, this.originY + 35);
+                    
+                    this.ctx.setLineDash([]);
+                    this.ctx.globalAlpha = 1.0;
+                }
+                
+                // Draw final image
+                if (document.getElementById('doubleShowFinalImage').checked && 
+                    Math.abs(results.finalImagePosition) <= this.systemLength + 10) {
+                    const finalX = this.originX + results.finalImagePosition * this.scale;
+                    const finalHeight = Math.abs(results.totalMag) * this.objectHeight * this.scale * this.verticalScale;
+                    const displayFinalHeight = Math.max(15, finalHeight);
+                    const finalArrowSize = Math.max(6, displayFinalHeight * 0.3) * this.imageArrowScale;
+                    
+                    this.ctx.strokeStyle = results.isReal ? '#9C27B0' : '#FF5722';
+                    this.ctx.fillStyle = results.isReal ? '#9C27B0' : '#FF5722';
+                    this.ctx.lineWidth = results.isReal ? 3 : 2;
+                    
+                    if (!results.isReal) {
+                        this.ctx.setLineDash([5, 5]);
+                    }
+                    
+                    const startY = this.originY;
+                    const endY = results.isUpright ? 
+                        this.originY - displayFinalHeight : 
+                        this.originY + displayFinalHeight;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(finalX, startY);
+                    this.ctx.lineTo(finalX, endY);
+                    this.ctx.stroke();
+                    
+                    // Arrow head
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(finalX, endY);
+                    if (results.isUpright) {
+                        this.ctx.lineTo(finalX - finalArrowSize, endY + finalArrowSize * 2);
+                        this.ctx.lineTo(finalX + finalArrowSize, endY + finalArrowSize * 2);
+                    } else {
+                        this.ctx.lineTo(finalX - finalArrowSize, endY - finalArrowSize * 2);
+                        this.ctx.lineTo(finalX + finalArrowSize, endY - finalArrowSize * 2);
+                    }
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    
+                    this.ctx.setLineDash([]);
+                    
+                    this.ctx.font = `${14 * this.textScale}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(results.isReal ? 'Real Final Image' : 'Virtual Final Image', finalX, this.originY + 50);
+                }
+            }
+            
+            updateDisplay() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.canvas.width === 0 || this.canvas.height === 0) {
+                    return;
+                }
+                
+                this.drawGrid();
+                this.drawAxis();
+                this.drawFocalPoints();
+                this.drawObject();
+                
+                // Draw lenses
+                const lens1X = this.originX + this.lens1Position * this.scale;
+                const lens2X = this.originX + this.lens2Position * this.scale;
+                
+                this.drawLens(lens1X, this.lens1Type, 'Lens 1');
+                this.drawLens(lens2X, this.lens2Type, 'Lens 2');
+                
+                this.drawRays();
+                this.drawImages();
+                
+                this.updateInfo();
+            }
+            
+            updateInfo() {
+                const results = this.calculateDoubleLensSystem();
+                
+                if (results.lens1Mag === Infinity || results.lens2Mag === Infinity || results.totalMag === Infinity) {
+                    document.getElementById('doubleLens1MagOutput').value = results.lens1Mag === Infinity ? '∞' : results.lens1Mag.toFixed(2);
+                    document.getElementById('doubleLens2MagOutput').value = results.lens2Mag === Infinity ? '∞' : results.lens2Mag.toFixed(2);
+                    document.getElementById('doubleTotalMagOutput').value = '∞';
+                    document.getElementById('doubleFinalImageDistanceOutput').value = '∞';
+                    document.getElementById('doubleFinalImageTypeOutput').value = 'Parallel rays';
+                } else {
+                    document.getElementById('doubleLens1MagOutput').value = results.lens1Mag.toFixed(2);
+                    document.getElementById('doubleLens2MagOutput').value = results.lens2Mag.toFixed(2);
+                    document.getElementById('doubleTotalMagOutput').value = results.totalMag.toFixed(2);
+                    document.getElementById('doubleFinalImageDistanceOutput').value = results.finalImageDistance.toFixed(1);
+                    
+                    let imageType = '';
+                    imageType += results.isReal ? 'Real, ' : 'Virtual, ';
+                    imageType += results.isUpright ? 'Upright' : 'Inverted';
+                    imageType += Math.abs(results.totalMag) > 1 ? ', Magnified' : ', Reduced';
+                    
+                    document.getElementById('doubleFinalImageTypeOutput').value = imageType;
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize single lens system by default
+            window.singleSystem = new SingleLensSystem();
+        });
+        
+        window.addEventListener('load', () => {
+            if (!window.singleSystem) {
+                window.singleSystem = new SingleLensSystem();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optical Dispersion Calculator</title>
+    
+    <!-- Plotly.js from CDN - Updated to a specific, recent version -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+    <style>
+        /* General Styling */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            margin: 0;
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        /* Main Container */
+        #calculator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .calc-header {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: clamp(20px, 4vw, 26px);
+            font-weight: 600;
+        }
+
+        /* Main content area */
+        .calc-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Grid layout for controls and outputs */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        /* Styling for each card/box */
+        .card {
+            background-color: #fdfdfd;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+        }
+
+        /* Input group styling */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #temp-group {
+            display: none; /* Hidden by default */
+        }
+
+        .input-group label {
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-row input, .input-row select {
+            flex-grow: 1;
+        }
+        
+        /* Input and Select element styling */
+        .calc-input, .calc-select {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background-color: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        .calc-input:focus, .calc-select:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        .calc-input[readonly] {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        
+        /* Export buttons styling */
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #495057;
+            background-color: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .export-btn:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+        }
+
+
+        /* Plots Section - now a flex column */
+        .plots-column {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        /* Plot containers */
+        .plot-container {
+            width: 100%;
+            min-height: 400px; /* Increased height for better visibility */
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            .calc-body {
+                padding: 15px;
+            }
+            .card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="calculator-container">
+    <div class="calc-header">Optical Material Dispersion Calculator</div>
+    <div class="calc-body">
+        
+        <!-- Controls and Single Point Calculation Section -->
+        <div class="controls-grid">
+            <!-- Input Card -->
+            <div class="card">
+                <h3 class="card-title">Input Parameters</h3>
+                
+                <div class="input-group">
+                    <label for="material-select">Material</label>
+                    <select id="material-select" class="calc-select"></select>
+                </div>
+                
+                <div id="temp-group" class="input-group">
+                    <label>Temperature</label>
+                     <div class="input-row">
+                        <input type="number" id="temperature" class="calc-input" value="24.5">
+                        <span style="margin-left: 5px; color: #6c757d;">°C</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Wavelength Range (for Plots)</label>
+                    <div class="input-row">
+                        <input type="number" id="start-wl" class="calc-input" value="400">
+                        <input type="number" id="stop-wl" class="calc-input" value="2000">
+                        <select id="plot-wl-unit" class="calc-select">
+                            <option value="nm" selected>nm</option>
+                            <option value="um">µm</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Wavelength Step (for Plots)</label>
+                     <div class="input-row">
+                        <input type="number" id="wl-step" class="calc-input" value="1" min="0.001">
+                        <span style="margin-left: 5px; color: #6c757d;">nm</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Single Wavelength (for Calculation)</label>
+                     <div class="input-row">
+                        <input type="number" id="single-wl" class="calc-input" value="1550">
+                        <select id="single-wl-unit" class="calc-select">
+                            <option value="nm" selected>nm</option>
+                            <option value="um">µm</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Material Length</label>
+                    <div class="input-row">
+                        <input type="number" id="length" class="calc-input" value="10">
+                        <select id="length-unit" class="calc-select">
+                            <option value="mm" selected>mm</option>
+                            <option value="cm">cm</option>
+                            <option value="m">m</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Card -->
+            <div class="card">
+                <h3 class="card-title">Calculated Values</h3>
+
+                <div class="input-group">
+                    <label>Refractive Index (n)</label>
+                    <input type="text" id="output-n" class="calc-input" readonly>
+                </div>
+
+                <div class="input-group">
+                    <label>Group Velocity (v<sub>g</sub>)</label>
+                    <div class="input-row">
+                        <input type="text" id="output-vg" class="calc-input" readonly>
+                        <select id="output-vg-unit" class="calc-select">
+                            <option value="m/s" selected>m/s</option>
+                            <option value="km/s">km/s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Group Velocity Dispersion (GVD)</label>
+                    <div class="input-row">
+                        <input type="text" id="output-gvd" class="calc-input" readonly>
+                        <select id="output-gvd-unit" class="calc-select">
+                            <option value="fs2/m">fs²/m</option>
+                            <option value="fs2/mm" selected>fs²/mm</option>
+                            <option value="ps2/m">ps²/m</option>
+                            <option value="ps2/mm">ps²/mm</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Group Delay Dispersion (GDD)</label>
+                    <input type="text" id="output-gdd" class="calc-input" readonly>
+                </div>
+
+                <div class="export-buttons">
+                    <button id="export-n-btn" class="export-btn">Export n Data</button>
+                    <button id="export-vg-btn" class="export-btn">Export v<sub>g</sub> Data</button>
+                    <button id="export-gvd-btn" class="export-btn">Export GVD Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plots Section -->
+        <div class="plots-column">
+            <div id="plot-n" class="plot-container"></div>
+            <div id="plot-vg" class="plot-container"></div>
+            <div id="plot-gvd" class="plot-container"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- PHYSICAL CONSTANTS ---
+    const C_LIGHT = 299792458; // Speed of light in vacuum, m/s
+
+    // --- GLOBAL VARIABLE FOR PLOT DATA ---
+    let plotData = { wl: [], n: [], vg: [], gvd: [] };
+
+    // --- SELLMEIER EQUATIONS DATA (Thoroughly reviewed and corrected) ---
+    const MATERIALS = {
+        "SF10": {
+            type: 'standard',
+            B1: 1.62153902, C1: 0.0122241457,
+            B2: 0.256287842, C2: 0.0595736775,
+            B3: 1.64447552,  C3: 147.468793
+        },
+        "Fused silica": {
+            type: 'standard',
+            B1: 0.6961663, C1: 0.0684043**2,
+            B2: 0.4079426, C2: 0.1162414**2,
+            B3: 0.8974794, C3: 9.896161**2
+        },
+        "BK7": {
+            type: 'standard',
+            B1: 1.03961212, C1: 0.00600069867,
+            B2: 0.231792344, C2: 0.0200179144,
+            B3: 1.01046945, C3: 103.560653
+        },
+        "BBO (n_o)": {
+            type: 'bbo_type',
+            A: 2.7359, B: 0.01878, C: 0.01822, D: 0.01471, E: 0.0006081, F: 0.00006740
+        },
+        "BBO (n_e)": {
+            type: 'bbo_type',
+            A: 2.3753, B: 0.01224, C: 0.01667, D: 0.01627, E: 0.0005716, F: 0.00006305
+        },
+        "CaF2": {
+            type: 'standard',
+            B1: 0.5675888, C1: 0.050263605**2,
+            B2: 0.4710914, C2: 0.1003909**2,
+            B3: 3.8484723, C3: 34.649040**2
+        },
+        "H-LAK54": {
+            type: 'standard',
+            B1: 1.20772937, C1: 0.0176389155,
+            B2: 0.737418371, C2: 0.000666515982,
+            B3: 1.35749026,  C3: 96.9938806
+        },
+        "LBO": {
+            type: 'lbo_type',
+            A: 2.45768, B: 0.0098877, C: 0.026095, D: 0.013847
+        },
+        "CLN (n_o)": {
+            type: 'cln_temp_dependent',
+            A1: 4.9048, A2: 0.11775, A3: 0.21802, A4: 0.027153,
+            B1: 2.2314e-8, B2: -2.9671e-8, B3: 2.1429e-8
+        },
+        "CLN (n_e)": {
+            type: 'cln_temp_dependent',
+            A1: 4.5820, A2: 0.09921, A3: 0.21090, A4: 0.021940,
+            B1: 5.2716e-8, B2: -4.9143e-8, B3: 2.2971e-7
+        },
+        "5% MgO:CLN (n_e)": {
+            type: 'mgo_cln_temp_dependent',
+            a1: 5.756, a2: 0.0983, a3: 0.2020, a4: 189.32, a5: 12.52, a6: 1.32e-2,
+            b1: 2.860e-6, b2: 4.700e-8, b3: 6.113e-8, b4: 1.516e-4
+        },
+        "5% MgO:CLN (n_o)": {
+            type: 'mgo_cln_temp_dependent',
+            a1: 5.653, a2: 0.1185, a3: 0.2091, a4: 89.61, a5: 10.85, a6: 1.97e-2,
+            b1: 7.941e-7, b2: 3.134e-8, b3: -4.641e-9, b4: -2.188e-6
+        }
+    };
+
+    // --- DOM ELEMENT REFERENCES ---
+    const ui = {
+        materialSelect: document.getElementById('material-select'),
+        tempGroup: document.getElementById('temp-group'),
+        temperature: document.getElementById('temperature'),
+        startWl: document.getElementById('start-wl'),
+        stopWl: document.getElementById('stop-wl'),
+        plotWlUnit: document.getElementById('plot-wl-unit'),
+        wlStep: document.getElementById('wl-step'),
+        singleWl: document.getElementById('single-wl'),
+        singleWlUnit: document.getElementById('single-wl-unit'),
+        length: document.getElementById('length'),
+        lengthUnit: document.getElementById('length-unit'),
+        outputN: document.getElementById('output-n'),
+        outputVg: document.getElementById('output-vg'),
+        outputVgUnit: document.getElementById('output-vg-unit'),
+        outputGvd: document.getElementById('output-gvd'),
+        outputGvdUnit: document.getElementById('output-gvd-unit'),
+        outputGdd: document.getElementById('output-gdd'),
+        plotN: document.getElementById('plot-n'),
+        plotVg: document.getElementById('plot-vg'),
+        plotGvd: document.getElementById('plot-gvd'),
+        exportNBtn: document.getElementById('export-n-btn'),
+        exportVgBtn: document.getElementById('export-vg-btn'),
+        exportGvdBtn: document.getElementById('export-gvd-btn'),
+    };
+
+    // --- CORE CALCULATION FUNCTIONS ---
+
+    function calculateN_standard(lambda_um, coeffs) {
+        const l2 = lambda_um**2;
+        const term1 = (coeffs.B1 * l2) / (l2 - coeffs.C1);
+        const term2 = (coeffs.B2 * l2) / (l2 - coeffs.C2);
+        const term3 = (coeffs.B3 * l2) / (l2 - coeffs.C3);
+        return Math.sqrt(1 + term1 + term2 + term3);
+    }
+    
+    function calculateN_bbo(lambda_um, coeffs) {
+        const l2 = lambda_um**2;
+        const n_squared = coeffs.A + (coeffs.B / (l2 - coeffs.C)) - coeffs.D * l2 + coeffs.E * l2**2 - coeffs.F * l2**3;
+        return Math.sqrt(n_squared);
+    }
+
+    function calculateN_mgo_cln(lambda_um, coeffs, temp_C) {
+        const T0 = 24.5;
+        const f = (temp_C - T0) * (temp_C + T0 + 2 * 273.16);
+        const l2 = lambda_um**2;
+        
+        const term1 = coeffs.a1 + coeffs.b1 * f;
+        const term2 = (coeffs.a2 + coeffs.b2 * f) / (l2 - (coeffs.a3 + coeffs.b3 * f)**2);
+        const term3 = (coeffs.a4 + coeffs.b4 * f) / (l2 - coeffs.a5**2);
+        const term4 = -coeffs.a6 * l2;
+
+        return Math.sqrt(term1 + term2 + term3 + term4);
+    }
+    
+    function calculateN_cln(lambda_um, coeffs, temp_C) {
+        const T0 = 24.5;
+        const F = (temp_C - T0) * (temp_C + T0 + 546);
+        const L2 = lambda_um**2;
+
+        const term1 = coeffs.A1;
+        const term2 = (coeffs.A2 + coeffs.B1 * F) / (L2 - (coeffs.A3 + coeffs.B2 * F)**2);
+        const term3 = coeffs.B3 * F;
+        const term4 = -coeffs.A4 * L2;
+        
+        return Math.sqrt(term1 + term2 + term3 + term4);
+    }
+    
+    function calculateN_lbo(lambda_um, coeffs) {
+        const l2 = lambda_um**2;
+        const n_squared = coeffs.A + (coeffs.B / (l2 - coeffs.C)) - coeffs.D * l2;
+        return Math.sqrt(n_squared);
+    }
+
+    function calculateN(lambda_um, material, temp_C = 24.5) {
+        switch (material.type) {
+            case 'standard':
+                return calculateN_standard(lambda_um, material);
+            case 'bbo_type':
+                return calculateN_bbo(lambda_um, material);
+            case 'mgo_cln_temp_dependent':
+                return calculateN_mgo_cln(lambda_um, material, temp_C);
+            case 'cln_temp_dependent':
+                return calculateN_cln(lambda_um, material, temp_C);
+            case 'lbo_type':
+                return calculateN_lbo(lambda_um, material);
+            default:
+                return NaN;
+        }
+    }
+
+    function getDerivatives(lambda_um, material, temp_C) {
+        const h = 1e-6; // Small step for numerical differentiation (in µm)
+        const n_plus = calculateN(lambda_um + h, material, temp_C);
+        const n_minus = calculateN(lambda_um - h, material, temp_C);
+        const n_center = calculateN(lambda_um, material, temp_C);
+
+        const dndl = (n_plus - n_minus) / (2 * h); // First derivative (1/µm)
+        const d2ndl2 = (n_plus - 2 * n_center + n_minus) / (h * h); // Second derivative (1/µm²)
+
+        return { dndl, d2ndl2 };
+    }
+
+    // --- MAIN UPDATE AND PLOTTING LOGIC ---
+
+    function updateCalculationsAndPlots() {
+        const materialName = ui.materialSelect.value;
+        const material = MATERIALS[materialName];
+        if (!material) return;
+        
+        const temp_C = parseFloat(ui.temperature.value);
+
+        const plotWlUnit = ui.plotWlUnit.value;
+        const startWl_um = ui.startWl.value * (plotWlUnit === 'nm' ? 1e-3 : 1);
+        const stopWl_um = ui.stopWl.value * (plotWlUnit === 'nm' ? 1e-3 : 1);
+        const wlStep_um = parseFloat(ui.wlStep.value) * 1e-3;
+
+        const singleWlUnit = ui.singleWlUnit.value;
+        const singleWl_um = ui.singleWl.value * (singleWlUnit === 'nm' ? 1e-3 : 1);
+        const singleWl_m = singleWl_um * 1e-6;
+
+        let length_m = parseFloat(ui.length.value);
+        if (ui.lengthUnit.value === 'mm') length_m *= 1e-3;
+        if (ui.lengthUnit.value === 'cm') length_m *= 1e-2;
+
+        const n = calculateN(singleWl_um, material, temp_C);
+        const { dndl, d2ndl2 } = getDerivatives(singleWl_um, material, temp_C);
+
+        const dndl_m = dndl * 1e6;
+        const d2ndl2_m = d2ndl2 * 1e12;
+        const ng = n - singleWl_m * dndl_m;
+        const vg = C_LIGHT / ng;
+        const gvd_base = (singleWl_m**3 / (2 * Math.PI * C_LIGHT**2)) * d2ndl2_m;
+        
+        ui.outputN.value = n.toFixed(6);
+
+        const vg_display = vg * (ui.outputVgUnit.value === 'km/s' ? 1e-3 : 1);
+        ui.outputVg.value = vg_display.toFixed(0);
+
+        let gvd_display = gvd_base;
+        const gvdUnit = ui.outputGvdUnit.value;
+        if (gvdUnit === 'fs2/m') gvd_display *= 1e30;
+        if (gvdUnit === 'fs2/mm') gvd_display *= 1e27;
+        if (gvdUnit === 'ps2/m') gvd_display *= 1e24;
+        if (gvdUnit === 'ps2/mm') gvd_display *= 1e21;
+        ui.outputGvd.value = gvd_display.toFixed(4);
+        
+        const gdd_unit_prefix = gvdUnit.startsWith('fs') ? 1e30 : 1e24;
+        const gdd_display_val = gvd_base * length_m * gdd_unit_prefix;
+        ui.outputGdd.value = gdd_display_val.toFixed(4) + (gvdUnit.startsWith('fs') ? ' fs²' : ' ps²');
+
+        const numPoints = Math.max(Math.floor((stopWl_um - startWl_um) / wlStep_um) + 1, 2);
+        const plot_wl_data = [], n_data = [], vg_data = [], gvd_data = [];
+
+        for (let i = 0; i < numPoints; i++) {
+            const wl_um = startWl_um + i * wlStep_um;
+            const wl_m = wl_um * 1e-6;
+
+            const n_val = calculateN(wl_um, material, temp_C);
+            const { dndl: dndl_val, d2ndl2: d2ndl2_val } = getDerivatives(wl_um, material, temp_C);
+            
+            const dndl_m_val = dndl_val * 1e6;
+            const d2ndl2_m_val = d2ndl2_val * 1e12;
+            const ng_val = n_val - wl_m * dndl_m_val;
+            const vg_val = C_LIGHT / ng_val;
+            const gvd_val_base = (wl_m**3 / (2 * Math.PI * C_LIGHT**2)) * d2ndl2_m_val;
+
+            plot_wl_data.push(wl_um * (plotWlUnit === 'nm' ? 1e3 : 1));
+            n_data.push(n_val);
+            vg_data.push(vg_val * (ui.outputVgUnit.value === 'km/s' ? 1e-3 : 1));
+
+            let gvd_val_display = gvd_val_base;
+            if (gvdUnit === 'fs2/m') gvd_val_display *= 1e30;
+            if (gvdUnit === 'fs2/mm') gvd_val_display *= 1e27;
+            if (gvdUnit === 'ps2/m') gvd_val_display *= 1e24;
+            if (gvdUnit === 'ps2/mm') gvd_val_display *= 1e21;
+            gvd_data.push(gvd_val_display);
+        }
+        
+        // Store data for export
+        plotData = { wl: plot_wl_data, n: n_data, vg: vg_data, gvd: gvd_data };
+        
+        updatePlots(plot_wl_data, n_data, vg_data, gvd_data);
+    }
+
+    function updatePlots(wl, n, vg, gvd) {
+        const plotWlUnit = ui.plotWlUnit.value;
+        const vgUnit = ui.outputVgUnit.value;
+        const gvdUnit = ui.outputGvdUnit.value;
+        
+        const commonLayout = {
+            margin: { l: 70, r: 30, t: 50, b: 60 },
+            xaxis: { title: `Wavelength (${plotWlUnit})`, gridcolor: '#e9ecef' },
+            yaxis: { gridcolor: '#e9ecef' },
+            plot_bgcolor: '#fdfdfd',
+            paper_bgcolor: '#fdfdfd',
+            font: { color: '#495057' }
+        };
+
+        Plotly.react(ui.plotN, [{ x: wl, y: n, type: 'scatter', mode: 'lines', line: {color: '#007bff'} }], 
+            { ...commonLayout, title: 'Refractive Index (n)', yaxis: { ...commonLayout.yaxis, title: 'n' } }
+        );
+        Plotly.react(ui.plotVg, [{ x: wl, y: vg, type: 'scatter', mode: 'lines', line: {color: '#28a745'} }], 
+            { ...commonLayout, title: 'Group Velocity (v<sub>g</sub>)', yaxis: { ...commonLayout.yaxis, title: `v_g (${vgUnit})` } }
+        );
+        Plotly.react(ui.plotGvd, [{ x: wl, y: gvd, type: 'scatter', mode: 'lines', line: {color: '#dc3545'} }], 
+            { ...commonLayout, title: 'Group Velocity Dispersion (GVD)', yaxis: { ...commonLayout.yaxis, title: `GVD (${gvdUnit})` } }
+        );
+    }
+    
+    function handleMaterialChange() {
+        const materialName = ui.materialSelect.value;
+        const material = MATERIALS[materialName];
+        const isTempDependent = material && (material.type === 'mgo_cln_temp_dependent' || material.type === 'cln_temp_dependent');
+        ui.tempGroup.style.display = isTempDependent ? 'flex' : 'none';
+        updateCalculationsAndPlots();
+    }
+
+    function exportDataToTxt(filename, header, xData, yData) {
+        let content = header + "\r\n";
+        for (let i = 0; i < xData.length; i++) {
+            content += `${xData[i].toFixed(4)},${yData[i].toPrecision(6)}\r\n`;
+        }
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- INITIALIZATION AND EVENT LISTENERS ---
+    
+    Object.keys(MATERIALS).sort().forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        ui.materialSelect.appendChild(option);
+    });
+    
+    const inputsToWatch = [
+        ui.startWl, ui.stopWl, ui.plotWlUnit, ui.wlStep,
+        ui.singleWl, ui.singleWlUnit, ui.length, ui.lengthUnit,
+        ui.outputVgUnit, ui.outputGvdUnit, ui.temperature
+    ];
+    inputsToWatch.forEach(input => input.addEventListener('input', updateCalculationsAndPlots));
+    ui.materialSelect.addEventListener('change', handleMaterialChange);
+
+    ui.exportNBtn.addEventListener('click', () => {
+        const wlUnit = ui.plotWlUnit.value;
+        exportDataToTxt('refractive_index.txt', `Wavelength (${wlUnit}),Refractive Index (n)`, plotData.wl, plotData.n);
+    });
+    ui.exportVgBtn.addEventListener('click', () => {
+        const wlUnit = ui.plotWlUnit.value;
+        const vgUnit = ui.outputVgUnit.value;
+        exportDataToTxt('group_velocity.txt', `Wavelength (${wlUnit}),Group Velocity (${vgUnit})`, plotData.wl, plotData.vg);
+    });
+    ui.exportGvdBtn.addEventListener('click', () => {
+        const wlUnit = ui.plotWlUnit.value;
+        const gvdUnit = ui.outputGvdUnit.value;
+        exportDataToTxt('gvd.txt', `Wavelength (${wlUnit}),GVD (${gvdUnit})`, plotData.wl, plotData.gvd);
+    });
+
+    handleMaterialChange();
+    
+    window.addEventListener('resize', () => {
+        Plotly.Plots.resize(ui.plotN);
+        Plotly.Plots.resize(ui.plotVg);
+        Plotly.Plots.resize(ui.plotGvd);
+    });
+});
+</script>
+
+</body>
+</html>

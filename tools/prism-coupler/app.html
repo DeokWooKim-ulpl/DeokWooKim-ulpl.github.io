@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planar waveguide modes analyzer: Prism coupler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #dee2e6;
+        }
+        h1 {
+            color: black;
+            text-align: left;
+            margin-bottom: 25px;
+            
+            font-weight: normal;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 18px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        .section h2 {
+            color: #6c757d;
+            margin-top: 0;
+            font-size: 1.3em;
+            border-bottom: 2px solid #adb5bd;
+            padding-bottom: 8px;
+            font-weight: normal;
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .input-field {
+            display: flex;
+            flex-direction: column;
+            min-width: 110px;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        input[type="number"], input[type="text"] {
+            padding: 7px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 95px;
+            background-color: #ffffff;
+        }
+        input[readonly] {
+            background-color: #e9ecef;
+            color: #6c757d;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #5a6268;
+        }
+        .btn-secondary {
+            background-color: #adb5bd;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #95a5a6;
+        }
+        .btn-success {
+            background-color: #868e96;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #6c757d;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .angle-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .progress-container {
+            margin: 15px 0;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 18px;
+            background-color: #e9ecef;
+            border-radius: 9px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #6c757d;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+        .plot-container {
+            margin: 15px 0;
+            min-height: 350px;
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .results-section {
+            display: none;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .description {
+            background-color: #f1f3f4;
+            padding: 18px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            border: 1px solid #dee2e6;
+        }
+        .description h3 {
+            color: #495057;
+            margin-top: 0;
+            font-weight: normal;
+        }
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        select {
+            padding: 7px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            background-color: white;
+            color: #495057;
+        }
+        .results-values {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            margin: 15px 0;
+        }
+        .results-values h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            font-weight: normal;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Planar waveguide modes analyzer: Prism coupler</h1>
+        
+<div class="description">
+    <h3>Theory and Application</h3>
+    <p>This tool implements a prism coupling analysis for determining thin film optical properties using waveguide mode excitation angles. The prism coupler technique is a sensitive method for measuring the refractive index and thickness of thin films.</p>
+    
+    <p><strong>Planar Waveguide Theory:</strong> A planar waveguide consists of a thin film with refractive index nf sandwiched between a substrate (ns) and a cladding medium (typically air). Light can propagate as guided modes in the film when the effective index satisfies: ns < β/k0 < nf, where β is the propagation constant and k0 is the free-space wave number. Each guided mode corresponds to a specific combination of film thickness and refractive index.</p>
+    
+    <p><strong>Physical Principle:</strong> When light is coupled into a thin film waveguide through a prism, only specific angles (mode angles) allow efficient coupling due to phase matching conditions. These angles depend on the film's refractive index, thickness, and the surrounding media.</p>
+    
+    <p><strong>Mathematical Method:</strong> The algorithm uses a least-squares approach to fit the experimental mode angles to theoretical predictions. It creates a 2D parameter space (refractive index vs. thickness) and finds the combination that best matches all measured angles simultaneously. The parameter S represents the sum of squared errors between theoretical and experimental mode angles for each (nf, df) combination. The optimal solution corresponds to the minimum S value, or equivalently, the maximum 1/S value displayed in the results.</p>
+    
+    <p><strong>Example Data Validation:</strong> The default parameter values provided in this tool are based on experimental data for sapphire films from the reference: Ulrich, R. and Torge, R., "Measurement of thin film parameters with a prism coupler," Applied Optics 12, 2901-2908 (1973). The calculation results from this tool reproduce the published values, validating the accuracy of the implemented algorithm.</p>
+    
+</div>
+
+        <div class="section">
+            <h2>Material Parameters</h2>
+            <div class="input-group">
+                <div class="input-field">
+                    <label>Prism Index (np):</label>
+                    <input type="number" id="np" value="1.73519" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>Substrate Index (ns):</label>
+                    <input type="number" id="ns" value="1.45707" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>Air Index:</label>
+                    <input type="number" id="air" value="1.00027" step="0.000001">
+                </div>
+                <div class="input-field">
+                    <label>Wavelength (μm):</label>
+                    <input type="number" id="wavelength" value="0.633" step="0.001">
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Search Parameters</h2>
+            <div class="input-group">
+                <div class="input-field">
+                    <label>nf_min:</label>
+                    <input type="number" id="nf_min" value="1.62854" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>nf_max:</label>
+                    <input type="number" id="nf_max" value="1.62959" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>df_min (μm):</label>
+                    <input type="number" id="df_min" value="2.57488" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>df_max (μm):</label>
+                    <input type="number" id="df_max" value="2.62506" step="0.0001">
+                </div>
+                <div class="input-field">
+                    <label>Grid Points (N):</label>
+                    <input type="number" id="N" value="100" min="10" max="10000">
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Incident Angles (degrees)</h2>
+            <div id="angles-container">
+                <div class="angle-input">
+                    <input type="number" class="angle-value" value="69.495737152195220" step="0.0000000000001">
+                    <button type="button" class="btn-danger" onclick="removeAngle(this)" style="display: none;">Remove</button>
+                </div>
+                <div class="angle-input">
+                    <input type="number" class="angle-value" value="68.416163834911670" step="0.0000000000001">
+                    <button type="button" class="btn-danger" onclick="removeAngle(this)">Remove</button>
+                </div>
+                <div class="angle-input">
+                    <input type="number" class="angle-value" value="66.692573420485490" step="0.0000000000001">
+                    <button type="button" class="btn-danger" onclick="removeAngle(this)">Remove</button>
+                </div>
+                <div class="angle-input">
+                    <input type="number" class="angle-value" value="64.528396587591860" step="0.0000000000001">
+                    <button type="button" class="btn-danger" onclick="removeAngle(this)">Remove</button>
+                </div>
+            </div>
+            <button type="button" class="btn-secondary" onclick="addAngle()">Add Angle</button>
+        </div>
+
+        <div class="section">
+            <h2>Computation</h2>
+            <button type="button" class="btn-primary" id="calculateBtn" onclick="calculate()">Calculate</button>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Estimating computation time...</div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsValues">
+            <div class="results-values">
+                <h3>Optimal Values (Maximum 1/S Points)</h3>
+                <div class="results-grid">
+                    <div class="input-field">
+                        <label>Optimal nf:</label>
+                        <input type="number" id="optimal_nf" readonly>
+                    </div>
+                    <div class="input-field">
+                        <label>Optimal df (μm):</label>
+                        <input type="number" id="optimal_df" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section results-section" id="plotControls">
+            <h2>Plot Controls</h2>
+            <div class="input-group">
+                <div class="input-field">
+                    <label>3D Colormap:</label>
+                    <select id="colormap">
+                        <option value="Rainbow">Rainbow</option>
+                        <option value="Hot">Hot</option>
+                        <option value="Viridis">Viridis</option>
+                        <option value="Plasma">Plasma</option>
+                        <option value="Cool">Cool</option>
+                        <option value="RdYlBu">RdYlBu</option>
+                    </select>
+                </div>
+            </div>
+            
+            <h3>Plot Range Controls</h3>
+            <div class="plot-ranges disabled" id="plotRanges">
+                <div class="input-group">
+                    <div class="input-field">
+                        <label>nf Range Min:</label>
+                        <input type="number" id="nf_plot_min" step="0.0001" onchange="updatePlotRanges()">
+                    </div>
+                    <div class="input-field">
+                        <label>nf Range Max:</label>
+                        <input type="number" id="nf_plot_max" step="0.0001" onchange="updatePlotRanges()">
+                    </div>
+                    <div class="input-field">
+                        <label>df Range Min (μm):</label>
+                        <input type="number" id="df_plot_min" step="0.0001" onchange="updatePlotRanges()">
+                    </div>
+                    <div class="input-field">
+                        <label>df Range Max (μm):</label>
+                        <input type="number" id="df_plot_max" step="0.0001" onchange="updatePlotRanges()">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <div class="input-field">
+                        <label>Z Range Min:</label>
+                        <input type="number" id="z_plot_min" step="0.01" onchange="updatePlotRanges()">
+                    </div>
+                    <div class="input-field">
+                        <label>Z Range Max:</label>
+                        <input type="number" id="z_plot_max" step="0.01" onchange="updatePlotRanges()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="section">
+                <h2>Results</h2>
+                <div class="export-buttons">
+                    <button type="button" class="btn-success" onclick="exportData('3d')">Export 3D Data</button>
+                    <button type="button" class="btn-success" onclick="exportData('grid')">Export X/Y Grid</button>
+                    <button type="button" class="btn-success" onclick="exportData('nf_projection')">Export nf Projection</button>
+                    <button type="button" class="btn-success" onclick="exportData('df_projection')">Export df Projection</button>
+                </div>
+                
+                <div class="plot-container" id="plot1"></div>
+                <div class="plot-container" id="plot2"></div>
+                <div class="plot-container" id="plot3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let calculationData = null;
+        let projectionResults = null;
+
+        function addAngle() {
+            const container = document.getElementById('angles-container');
+            const newAngleDiv = document.createElement('div');
+            newAngleDiv.className = 'angle-input';
+            newAngleDiv.innerHTML = `
+                <input type="number" class="angle-value" value="45.0" step="0.0000000000001">
+                <button type="button" class="btn-danger" onclick="removeAngle(this)">Remove</button>
+            `;
+            container.appendChild(newAngleDiv);
+        }
+
+        function removeAngle(button) {
+            const angleInputs = document.querySelectorAll('.angle-input');
+            if (angleInputs.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        function updateProgress(percent, message) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressFill.style.width = percent + '%';
+            progressText.textContent = message;
+        }
+
+        function estimateComputationTime(N, numAngles) {
+            const operations = N * N * numAngles * 50;
+            const timePerOperation = 0.001;
+            return operations * timePerOperation / 1000;
+        }
+
+        async function calculate() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            
+            calculateBtn.disabled = true;
+            progressContainer.style.display = 'block';
+
+            try {
+                const wavelength = parseFloat(document.getElementById('wavelength').value);
+                const k0 = 2 * Math.PI / wavelength;
+                
+                const np = parseFloat(document.getElementById('np').value);
+                const ns = parseFloat(document.getElementById('ns').value);
+                const air = parseFloat(document.getElementById('air').value);
+                
+                const nf_min = parseFloat(document.getElementById('nf_min').value);
+                const nf_max = parseFloat(document.getElementById('nf_max').value);
+                const df_min = parseFloat(document.getElementById('df_min').value);
+                const df_max = parseFloat(document.getElementById('df_max').value);
+                const N = parseInt(document.getElementById('N').value);
+
+                const angleElements = document.querySelectorAll('.angle-value');
+                const interangle = Array.from(angleElements).map(el => parseFloat(el.value));
+
+                const estimatedTime = estimateComputationTime(N, interangle.length);
+                updateProgress(0, `Estimated time: ${estimatedTime.toFixed(1)} seconds`);
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const nf_range = [];
+                const df_range = [];
+                for (let i = 0; i < N; i++) {
+                    nf_range.push(nf_min + (nf_max - nf_min) * i / (N - 1));
+                    df_range.push((df_min + (df_max - df_min) * i / (N - 1)) * k0);
+                }
+
+                updateProgress(10, 'Setting up parameter grids...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const X = [];
+                const Y = [];
+                for (let i = 0; i < N; i++) {
+                    X[i] = [];
+                    Y[i] = [];
+                    for (let j = 0; j < N; j++) {
+                        X[i][j] = nf_range[j];
+                        Y[i][j] = df_range[i];
+                    }
+                }
+
+                updateProgress(20, 'Performing least squares calculation...');
+
+                const V = await leastSquaresSolve(X, Y, interangle, np, ns, air, k0);
+
+                updateProgress(80, 'Performing axis projection...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const projectionResult = performAxisProjection(X, Y, V, k0);
+
+                updateProgress(95, 'Generating plots...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                calculationData = { X, Y: Y.map(row => row.map(val => val / k0)), V, k0 };
+                projectionResults = projectionResult;
+
+                document.getElementById('optimal_nf').value = projectionResult.optimal_nf.toFixed(6);
+                document.getElementById('optimal_df').value = projectionResult.optimal_df.toFixed(6);
+
+                setupPlotRanges();
+                generatePlots();
+
+                updateProgress(100, 'Calculation complete!');
+                
+                document.getElementById('resultsSection').style.display = 'block';
+                document.getElementById('plotControls').style.display = 'block';
+                document.getElementById('resultsValues').style.display = 'block';
+                document.getElementById('plotRanges').classList.remove('disabled');
+
+            } catch (error) {
+                console.error('Calculation error:', error);
+                updateProgress(0, 'Error during calculation: ' + error.message);
+            } finally {
+                calculateBtn.disabled = false;
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        async function leastSquaresSolve(X, Y, interangle, np, ns, air, k0) {
+            const N = X.length;
+            const s1dat = interangle.map(angle => Math.sin(angle * Math.PI / 180));
+            
+            const V = Array(N).fill().map(() => Array(N).fill(0));
+            
+            const totalSteps = N * N * s1dat.length;
+            let currentStep = 0;
+            
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    const x = X[i][j];
+                    const y = Y[i][j];
+                    
+                    let sumSquaredError = 0;
+                    let validModes = 0;
+                    
+                    for (let k = 0; k < s1dat.length; k++) {
+                        const s1 = s1dat[k];
+                        
+                        try {
+                            const np_s1_squared = (np * s1) * (np * s1);
+                            const x_squared = x * x;
+                            
+                            if (x_squared <= np_s1_squared) continue;
+                            if (np_s1_squared <= air * air) continue;
+                            if (np_s1_squared <= ns * ns) continue;
+                            
+                            const rf = Math.sqrt(x_squared - np_s1_squared);
+                            const rc = Math.sqrt(np_s1_squared - air * air);
+                            const rs = Math.sqrt(np_s1_squared - ns * ns);
+                            
+                            const gn = Math.tan(rf * y);
+                            const fn = rf * (rc + rs) / (rf * rf - rs * rc);
+                            
+                            const error = fn - gn;
+                            sumSquaredError += error * error;
+                            validModes++;
+                            
+                        } catch (e) {
+                            sumSquaredError += 1e6;
+                        }
+                        
+                        currentStep++;
+                        if (currentStep % 200 === 0) {
+                            const progress = 20 + (currentStep / totalSteps) * 60;
+                            updateProgress(progress, `Processing grid point ${i+1},${j+1}... (${currentStep}/${totalSteps})`);
+                            await new Promise(resolve => setTimeout(resolve, 1));
+                        }
+                    }
+                    
+                    if (validModes === s1dat.length) {
+                        V[i][j] = 1 / (sumSquaredError + 1e-12);
+                    } else {
+                        V[i][j] = 0;
+                    }
+                }
+            }
+            
+            return V;
+        }
+
+        function performAxisProjection(X, Y, V, k0) {
+            const N = X.length;
+            
+            const nf_data = X[0];
+            const sigma_n = Array(N).fill(0);
+            for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                    sigma_n[j] = Math.max(sigma_n[j], V[i][j]);
+                }
+            }
+            
+            const df_data = Y.map(row => row[0] / k0);
+            const sigma_d = Array(N).fill(0);
+            for (let i = 0; i < N; i++) {
+                for (let j = 0; j < N; j++) {
+                    sigma_d[i] = Math.max(sigma_d[i], V[i][j]);
+                }
+            }
+            
+            const max_nf_idx = sigma_n.indexOf(Math.max(...sigma_n));
+            const max_df_idx = sigma_d.indexOf(Math.max(...sigma_d));
+            
+            const optimal_nf = nf_data[max_nf_idx];
+            const optimal_df = df_data[max_df_idx];
+            
+            return {
+                nf_data,
+                sigma_n,
+                df_data,
+                sigma_d,
+                optimal_nf,
+                optimal_df,
+                max_nf_idx,
+                max_df_idx
+            };
+        }
+
+        function setupPlotRanges() {
+            if (!calculationData) return;
+            
+            const { X, Y, V } = calculationData;
+            
+            const nf_min = Math.min(...X[0]);
+            const nf_max = Math.max(...X[0]);
+            const df_min = Math.min(...Y.map(row => row[0]));
+            const df_max = Math.max(...Y.map(row => row[0]));
+            const z_min = Math.min(...V.flat());
+            const z_max = Math.max(...V.flat());
+            
+            document.getElementById('nf_plot_min').value = nf_min;
+            document.getElementById('nf_plot_max').value = nf_max;
+            document.getElementById('df_plot_min').value = df_min;
+            document.getElementById('df_plot_max').value = df_max;
+            document.getElementById('z_plot_min').value = z_min;
+            document.getElementById('z_plot_max').value = z_max;
+        }
+
+        function updatePlotRanges() {
+            if (!calculationData) return;
+            generatePlots();
+        }
+
+        function generatePlots() {
+            if (!calculationData || !projectionResults) return;
+            
+            const { X, Y, V } = calculationData;
+            const { nf_data, sigma_n, df_data, sigma_d, optimal_nf, optimal_df, max_nf_idx, max_df_idx } = projectionResults;
+            
+            const nf_min = parseFloat(document.getElementById('nf_plot_min').value);
+            const nf_max = parseFloat(document.getElementById('nf_plot_max').value);
+            const df_min = parseFloat(document.getElementById('df_plot_min').value);
+            const df_max = parseFloat(document.getElementById('df_plot_max').value);
+            const z_min = parseFloat(document.getElementById('z_plot_min').value);
+            const z_max = parseFloat(document.getElementById('z_plot_max').value);
+            
+            const trace1_data = {
+                x: nf_data,
+                y: sigma_n,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { size: 6, color: '#6c757d' },
+                name: 'Data'
+            };
+            
+            const trace1_max = {
+                x: [optimal_nf],
+                y: [sigma_n[max_nf_idx]],
+                mode: 'markers',
+                type: 'scatter',
+                marker: { size: 10, color: 'red', symbol: 'circle' },
+                name: 'Maximum'
+            };
+            
+            const layout1 = {
+                title: {
+                    text: 'Projection to refractive index axis',
+                    font: { size: 18, color: '#495057' }
+                },
+                xaxis: { 
+                    title: { text: 'Refractive Index', font: { size: 14, color: '#495057' } },
+                    range: [nf_min, nf_max],
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: { 
+                    title: { text: '1/S', font: { size: 14, color: '#495057' } },
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                showlegend: false,
+                margin: { l: 60, r: 20, t: 60, b: 60 },
+                plot_bgcolor: '#ffffff',
+                paper_bgcolor: '#ffffff'
+            };
+            
+            Plotly.newPlot('plot1', [trace1_data, trace1_max], layout1);
+            
+            const trace2_data = {
+                x: df_data,
+                y: sigma_d,
+                mode: 'markers',
+                type: 'scatter',
+                marker: { size: 6, color: '#6c757d' },
+                name: 'Data'
+            };
+            
+            const trace2_max = {
+                x: [optimal_df],
+                y: [sigma_d[max_df_idx]],
+                mode: 'markers',
+                type: 'scatter',
+                marker: { size: 10, color: 'red', symbol: 'circle' },
+                name: 'Maximum'
+            };
+            
+            const layout2 = {
+                title: {
+                    text: 'Projection to thickness axis',
+                    font: { size: 18, color: '#495057' }
+                },
+                xaxis: { 
+                    title: { text: 'Thickness [μm]', font: { size: 14, color: '#495057' } },
+                    range: [df_min, df_max],
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                yaxis: { 
+                    title: { text: '1/S', font: { size: 14, color: '#495057' } },
+                    showgrid: true,
+                    gridcolor: '#e9ecef'
+                },
+                showlegend: false,
+                margin: { l: 60, r: 20, t: 60, b: 60 },
+                plot_bgcolor: '#ffffff',
+                paper_bgcolor: '#ffffff'
+            };
+            
+            Plotly.newPlot('plot2', [trace2_data, trace2_max], layout2);
+            
+            const colormap = document.getElementById('colormap').value;
+            
+            const trace3 = {
+                x: X[0],
+                y: Y.map(row => row[0]),
+                z: V,
+                type: 'surface',
+                colorscale: colormap,
+                cmin: z_min,
+                cmax: z_max,
+                colorbar: {
+                    title: '1/S(nf,df)',
+                    titlefont: { size: 14, color: '#495057' }
+                }
+            };
+            
+            const layout3 = {
+                title: {
+                    text: '3D view',
+                    font: { size: 18, color: '#495057' }
+                },
+                scene: {
+                    xaxis: { 
+                        title: { text: 'nf', font: { size: 14, color: '#495057' } },
+                        range: [nf_min, nf_max]
+                    },
+                    yaxis: { 
+                        title: { text: 'df [μm]', font: { size: 14, color: '#495057' } },
+                        range: [df_min, df_max]
+                    },
+                    zaxis: { 
+                        title: { text: '1/S(nf,df)', font: { size: 14, color: '#495057' } },
+                        range: [z_min, z_max]
+                    },
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1.5 }
+                    },
+                    bgcolor: '#ffffff'
+                },
+                margin: { l: 0, r: 0, t: 60, b: 0 },
+                paper_bgcolor: '#ffffff'
+            };
+            
+            Plotly.newPlot('plot3', [trace3], layout3);
+        }
+
+        function exportData(type) {
+            if (!calculationData || !projectionResults) return;
+            
+            let data = '';
+            let filename = '';
+            
+            const { X, Y, V } = calculationData;
+            const { nf_data, sigma_n, df_data, sigma_d } = projectionResults;
+            
+            switch (type) {
+                case '3d':
+                    filename = 'fitting_landscape_3d.txt';
+                    data = 'X\tY\tZ\n';
+                    for (let i = 0; i < X.length; i++) {
+                        for (let j = 0; j < X[0].length; j++) {
+                            data += `${X[i][j]}\t${Y[i][j]}\t${V[i][j]}\n`;
+                        }
+                    }
+                    break;
+                    
+                case 'grid':
+                    filename = 'xy_grid.txt';
+                    data = 'X Grid:\n';
+                    X.forEach(row => {
+                        data += row.join('\t') + '\n';
+                    });
+                    data += '\nY Grid:\n';
+                    Y.forEach(row => {
+                        data += row.join('\t') + '\n';
+                    });
+                    break;
+                    
+                case 'nf_projection':
+                    filename = 'nf_projection.txt';
+                    data = 'nf\t1/S\n';
+                    for (let i = 0; i < nf_data.length; i++) {
+                        data += `${nf_data[i]}\t${sigma_n[i]}\n`;
+                    }
+                    break;
+                    
+                case 'df_projection':
+                    filename = 'df_projection.txt';
+                    data = 'df[um]\t1/S\n';
+                    for (let i = 0; i < df_data.length; i++) {
+                        data += `${df_data[i]}\t${sigma_d[i]}\n`;
+                    }
+                    break;
+            }
+            
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('colormap').addEventListener('change', function() {
+            if (calculationData) {
+                generatePlots();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstRemoveBtn = document.querySelector('.angle-input button');
+            if (firstRemoveBtn) {
+                firstRemoveBtn.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

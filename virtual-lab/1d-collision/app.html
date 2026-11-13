@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1D collision simulator</title>
+</head>
+<body>
+<!-- Google Sites용 1D 충돌 시뮬레이션 (모바일 반응형) -->
+<div id="collision-simulation-container">
+  <style>
+    #collision-simulation-container {
+      font-family: Arial, sans-serif;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    
+    #collision-simulation-container * {
+      box-sizing: border-box;
+    }
+    
+    .sim-title {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+      font-size: clamp(18px, 4vw, 24px);
+    }
+    
+    .controls-container {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+    }
+    
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    
+    @media (max-width: 768px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+    
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .input-group label {
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+      font-size: 14px;
+    }
+    
+    .input-group input,
+    .input-group select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      font-size: 14px;
+    }
+    
+    .slider-container {
+      margin-bottom: 15px;
+    }
+    
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .slider-group label {
+      font-weight: bold;
+      color: #555;
+      min-width: 120px;
+      font-size: 14px;
+    }
+    
+    .slider {
+      flex: 1;
+      min-width: 150px;
+      height: 8px;
+      border-radius: 4px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+    
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .slider-value {
+      min-width: 60px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .sim-button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: background-color 0.3s;
+      min-width: 80px;
+    }
+    
+    .sim-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .start-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    
+    .start-btn:hover:not(:disabled) {
+      background-color: #45a049;
+    }
+    
+    .pause-btn {
+      background-color: #ff9800;
+      color: white;
+    }
+    
+    .pause-btn:hover:not(:disabled) {
+      background-color: #e68900;
+    }
+    
+    .resume-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    
+    .resume-btn:hover:not(:disabled) {
+      background-color: #1976D2;
+    }
+    
+    .reset-btn {
+      background-color: #f44336;
+      color: white;
+    }
+    
+    .reset-btn:hover {
+      background-color: #d32f2f;
+    }
+    
+    .download-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+    
+    .download-btn:hover {
+      background-color: #5a6268;
+    }
+    
+    .animation-container {
+      background-color: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      padding: 15px;
+    }
+    
+    .rail-container {
+      position: relative;
+      margin: 15px 0;
+      width: 100%;
+    }
+    
+    .rail {
+      width: 100%;
+      height: 50px;
+      background-color: #ddd;
+      border: 2px solid #aaa;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    @media (max-width: 480px) {
+      .rail {
+        height: 40px;
+      }
+    }
+    
+    .car {
+      position: absolute;
+      border: 2px solid #333;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: grab;
+      user-select: none;
+      z-index: 10;
+    }
+    
+    .car:active {
+      cursor: grabbing;
+    }
+    
+    .car.no-drag {
+      cursor: default;
+      pointer-events: none;
+    }
+    
+    .car1 {
+      background-color: #2196F3 !important;
+    }
+    
+    .car2 {
+      background-color: #f44336 !important;
+    }
+    
+    .axis {
+      position: relative;
+      height: 30px;
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .axis-line {
+      position: absolute;
+      top: 15px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #333;
+    }
+    
+    .tick {
+      position: absolute;
+      top: 10px;
+      width: 2px;
+      height: 10px;
+      background-color: #333;
+    }
+    
+    .tick-label {
+      position: absolute;
+      top: 25px;
+      font-size: 11px;
+      color: #666;
+      transform: translateX(-50%);
+    }
+    
+    .time-display {
+      text-align: center;
+      color: #666;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .plots-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    
+    @media (min-width: 768px) {
+      .plots-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .plot {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 300px;
+    }
+    
+    @media (max-width: 480px) {
+      .plot {
+        min-height: 250px;
+      }
+    }
+    
+    /* 터치 디바이스용 개선 */
+    @media (hover: none) and (pointer: coarse) {
+      .car {
+        cursor: default;
+      }
+      
+      .sim-button {
+        padding: 12px 18px;
+        font-size: 16px;
+      }
+      
+      .slider {
+        height: 12px;
+      }
+      
+      .slider::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+      }
+      
+      .slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+      }
+    }
+  </style>
+
+  <h1 class="sim-title">1D Collision Simulation: Two Objects</h1>
+  
+  <div class="controls-container">
+    <div class="controls-grid">
+      <div class="input-group">
+        <label for="railLength">Rail Length (m):</label>
+        <input type="number" id="railLength" value="10" min="5" max="20" step="0.5">
+      </div>
+      <div class="input-group">
+        <label for="carSize">Car Size (m):</label>
+        <input type="number" id="carSize" value="0.5" min="0.2" max="1" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="mass1">Car 1 Mass (kg):</label>
+        <input type="number" id="mass1" value="1" min="0.1" max="10" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="mass2">Car 2 Mass (kg):</label>
+        <input type="number" id="mass2" value="1" min="0.1" max="10" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="velocity1">Car 1 Initial Velocity (m/s):</label>
+        <input type="number" id="velocity1" value="2" min="-5" max="5" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="velocity2">Car 2 Initial Velocity (m/s):</label>
+        <input type="number" id="velocity2" value="-1" min="-5" max="5" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="frictionCoeff">Friction Coefficient (μ):</label>
+        <input type="number" id="frictionCoeff" value="0" min="0" max="1" step="0.01">
+      </div>
+      <div class="input-group">
+        <label for="collisionType">Collision Type:</label>
+        <select id="collisionType">
+          <option value="elastic">Perfectly Elastic</option>
+          <option value="inelastic">Perfectly Inelastic</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-group">
+        <label for="speedSlider">Simulation Speed:</label>
+        <input type="range" id="speedSlider" class="slider" min="0.1" max="3" value="1" step="0.1">
+        <span id="speedValue" class="slider-value">1.0x</span>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button id="startBtn" class="sim-button start-btn">Start</button>
+      <button id="pauseBtn" class="sim-button pause-btn" disabled>Pause</button>
+      <button id="resumeBtn" class="sim-button resume-btn" disabled>Resume</button>
+      <button id="resetBtn" class="sim-button reset-btn">Reset</button>
+      <button id="downloadBtn" class="sim-button download-btn">Download Data</button>
+    </div>
+  </div>
+  
+  <div class="animation-container">
+    <div class="rail-container">
+      <div class="rail" id="rail">
+        <div class="car car1" id="car1">1</div>
+        <div class="car car2" id="car2">2</div>
+      </div>
+      <div class="axis" id="axis">
+        <div class="axis-line"></div>
+      </div>
+    </div>
+    <div class="time-display">
+      Time: <span id="timeDisplay">0.00</span>s
+    </div>
+  </div>
+  
+  <div class="plots-container">
+    <div class="plot" id="positionPlot"></div>
+    <div class="plot" id="velocityPlot"></div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const SimNamespace = 'CollisionSim_' + Date.now();
+  
+  // 고정된 색상 정의
+  const COLOR1 = "#2196F3"; // Blue (카트1)
+  const COLOR2 = "#f44336"; // Red (카트2)
+
+  class CollisionSimulation {
+    constructor() {
+      this.isRunning = false;
+      this.isPaused = false;
+      this.time = 0;
+      this.dt = 0.016; // 60 FPS
+      this.speedMultiplier = 1.0;
+      this.animationId = null;
+      this.isDragging = false;
+      this.dragCar = null;
+      this.g = 9.81; // 중력 상수
+      this.data = { time: [], position1: [], position2: [], velocity1: [], velocity2: [] };
+      this.touchStartX = 0;
+      this.touchStartY = 0;
+      
+      this.initializeElements();
+      this.setupEventListeners();
+      this.initializePlots();
+      this.reset();
+    }
+
+    initializeElements() {
+      this.rail = document.getElementById('rail');
+      this.car1 = document.getElementById('car1');
+      this.car2 = document.getElementById('car2');
+      this.timeDisplay = document.getElementById('timeDisplay');
+      this.axis = document.getElementById('axis');
+      this.speedSlider = document.getElementById('speedSlider');
+      this.speedValue = document.getElementById('speedValue');
+      this.startBtn = document.getElementById('startBtn');
+      this.pauseBtn = document.getElementById('pauseBtn');
+      this.resumeBtn = document.getElementById('resumeBtn');
+      this.resetBtn = document.getElementById('resetBtn');
+      this.downloadBtn = document.getElementById('downloadBtn');
+    }
+
+    setupEventListeners() {
+      this.startBtn.addEventListener('click', () => this.start());
+      this.pauseBtn.addEventListener('click', () => this.pause());
+      this.resumeBtn.addEventListener('click', () => this.resume());
+      this.resetBtn.addEventListener('click', () => this.reset());
+      this.downloadBtn.addEventListener('click', () => this.downloadData());
+      
+      this.speedSlider.addEventListener('input', (e) => {
+        this.speedMultiplier = parseFloat(e.target.value);
+        this.speedValue.textContent = this.speedMultiplier.toFixed(1) + 'x';
+      });
+      
+      document.getElementById('mass1').addEventListener('input', () => this.updateCarLabels());
+      document.getElementById('mass2').addEventListener('input', () => this.updateCarLabels());
+      document.getElementById('railLength').addEventListener('change', () => this.updateAxis());
+      document.getElementById('carSize').addEventListener('change', () => this.updateDisplay());
+      
+      this.setupDragListeners();
+      
+      // 리사이즈 이벤트
+      window.addEventListener('resize', () => {
+        setTimeout(() => {
+          this.updateDisplay();
+          this.updateAxis();
+          if (this.data.time.length > 0) {
+            this.updatePlots(true);
+          }
+        }, 100);
+      });
+    }
+
+    setupDragListeners() {
+      // 마우스 이벤트
+      [this.car1, this.car2].forEach((car, index) => {
+        car.addEventListener('mousedown', (e) => this.startDrag(e, index + 1));
+      });
+      document.addEventListener('mousemove', (e) => this.drag(e));
+      document.addEventListener('mouseup', () => this.endDrag());
+
+      // 터치 이벤트
+      [this.car1, this.car2].forEach((car, index) => {
+        car.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          const touch = e.touches[0];
+          this.touchStartX = touch.clientX;
+          this.touchStartY = touch.clientY;
+          this.startDrag({clientX: touch.clientX, clientY: touch.clientY}, index + 1);
+        }, {passive: false});
+      });
+      
+      document.addEventListener('touchmove', (e) => {
+        if (this.isDragging) {
+          e.preventDefault();
+          const touch = e.touches[0];
+          this.drag({clientX: touch.clientX, clientY: touch.clientY});
+        }
+      }, {passive: false});
+      
+      document.addEventListener('touchend', () => this.endDrag());
+    }
+
+    startDrag(e, carIndex) {
+      if (this.isRunning || this.isPaused) return;
+      this.isDragging = true;
+      this.dragCar = carIndex;
+      e.preventDefault && e.preventDefault();
+    }
+
+    drag(e) {
+      if (!this.isDragging || this.isRunning || this.isPaused) return;
+      
+      const railRect = this.rail.getBoundingClientRect();
+      const mouseX = e.clientX - railRect.left;
+      const railWidth = railRect.width;
+      const params = this.getParameters();
+      
+      let newPos = (mouseX / railWidth) * params.railLength;
+      newPos = Math.max(0, Math.min(params.railLength - params.carSize, newPos));
+      
+      if (this.dragCar === 1) {
+        this.x1 = newPos;
+      } else {
+        this.x2 = newPos;
+      }
+      this.updateDisplay();
+    }
+
+    endDrag() {
+      this.isDragging = false;
+      this.dragCar = null;
+    }
+
+    getParameters() {
+      return {
+        railLength: parseFloat(document.getElementById('railLength').value),
+        carSize: parseFloat(document.getElementById('carSize').value),
+        mass1: parseFloat(document.getElementById('mass1').value),
+        mass2: parseFloat(document.getElementById('mass2').value),
+        velocity1: parseFloat(document.getElementById('velocity1').value),
+        velocity2: parseFloat(document.getElementById('velocity2').value),
+        frictionCoeff: parseFloat(document.getElementById('frictionCoeff').value),
+        collisionType: document.getElementById('collisionType').value
+      };
+    }
+
+    updateCarLabels() {
+      const params = this.getParameters();
+      this.car1.textContent = `1 (${params.mass1}kg)`;
+      this.car2.textContent = `2 (${params.mass2}kg)`;
+    }
+
+    getPlotLayout() {
+      const isMobile = window.innerWidth < 768;
+      return {
+        title: '',
+        xaxis: { 
+          title: 'Time (s)', 
+          color: '#666',
+          titlefont: { size: isMobile ? 12 : 14 }
+        },
+        yaxis: {
+          title: 'Car 1 (blue)',
+          titlefont: { color: COLOR1, size: isMobile ? 11 : 14 },
+          tickfont: { color: COLOR1, size: isMobile ? 10 : 12 },
+          side: 'left'
+        },
+        yaxis2: {
+          title: 'Car 2 (red)',
+          titlefont: { color: COLOR2, size: isMobile ? 11 : 14 },
+          tickfont: { color: COLOR2, size: isMobile ? 10 : 12 },
+          overlaying: 'y',
+          side: 'right'
+        },
+        legend: { 
+          font: { size: isMobile ? 10 : 13 },
+          orientation: isMobile ? 'h' : 'v',
+          x: isMobile ? 0 : 1,
+          y: isMobile ? -0.2 : 1
+        },
+        margin: { 
+          l: isMobile ? 40 : 60, 
+          r: isMobile ? 40 : 60, 
+          t: isMobile ? 30 : 40, 
+          b: isMobile ? 60 : 40 
+        },
+        plot_bgcolor: '#f9f9f9',
+        paper_bgcolor: '#fff',
+        autosize: true
+      };
+    }
+
+    initializePlots() {
+      const config = { 
+        displayModeBar: false, 
+        responsive: true,
+        staticPlot: false
+      };
+      
+      // Position plot
+      Plotly.newPlot('positionPlot',
+        [
+          { x: [], y: [], name: 'Car 1 Position', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+          { x: [], y: [], name: 'Car 2 Position', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+        ],
+        {
+          ...this.getPlotLayout(),
+          title: { text: 'Position vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+          yaxis: {
+            ...this.getPlotLayout().yaxis,
+            title: 'Car 1 Position (m)'
+          },
+          yaxis2: {
+            ...this.getPlotLayout().yaxis2,
+            title: 'Car 2 Position (m)'
+          }
+        },
+        config
+      );
+      
+      // Velocity plot
+      Plotly.newPlot('velocityPlot',
+        [
+          { x: [], y: [], name: 'Car 1 Velocity', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+          { x: [], y: [], name: 'Car 2 Velocity', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+        ],
+        {
+          ...this.getPlotLayout(),
+          title: { text: 'Velocity vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+          yaxis: {
+            ...this.getPlotLayout().yaxis,
+            title: 'Car 1 Velocity (m/s)'
+          },
+          yaxis2: {
+            ...this.getPlotLayout().yaxis2,
+            title: 'Car 2 Velocity (m/s)'
+          }
+        },
+        config
+      );
+    }
+
+    updateAxis() {
+      const params = this.getParameters();
+      const railWidth = this.rail.offsetWidth;
+      
+      // 기존 tick들 제거
+      this.axis.querySelectorAll('.tick, .tick-label').forEach(el => el.remove());
+      
+      const isMobile = window.innerWidth < 768;
+      const numTicks = Math.min(isMobile ? 6 : 11, params.railLength + 1);
+      const tickSpacing = params.railLength / (numTicks - 1);
+      
+      for (let i = 0; i < numTicks; i++) {
+        const value = i * tickSpacing;
+        const position = (value / params.railLength) * 100;
+        
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        tick.style.left = `${position}%`;
+        this.axis.appendChild(tick);
+        
+        const label = document.createElement('div');
+        label.className = 'tick-label';
+        label.style.left = `${position}%`;
+        label.textContent = value.toFixed(1);
+        this.axis.appendChild(label);
+      }
+    }
+
+    start() {
+      const params = this.getParameters();
+      this.railLength = params.railLength;
+      this.carSize = params.carSize;
+      this.mass1 = params.mass1;
+      this.mass2 = params.mass2;
+      this.v1 = params.velocity1;
+      this.v2 = params.velocity2;
+      this.frictionCoeff = params.frictionCoeff;
+      this.collisionType = params.collisionType;
+      
+      if (this.x1 === undefined) this.x1 = 0.5;
+      if (this.x2 === undefined) this.x2 = this.railLength - params.carSize - 0.5;
+      
+      this.isRunning = true;
+      this.isPaused = false;
+      this.startBtn.disabled = true;
+      this.pauseBtn.disabled = false;
+      this.resumeBtn.disabled = true;
+      
+      this.car1.classList.add('no-drag');
+      this.car2.classList.add('no-drag');
+      
+      this.data = { time: [], position1: [], position2: [], velocity1: [], velocity2: [] };
+      this.time = 0;
+      
+      this.clearAndResetPlots();
+      this.updateDisplay();
+      this.animate();
+    }
+
+    pause() {
+      this.isPaused = true;
+      this.isRunning = false;
+      this.startBtn.disabled = true;
+      this.pauseBtn.disabled = true;
+      this.resumeBtn.disabled = false;
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+    }
+
+    resume() {
+      this.isPaused = false;
+      this.isRunning = true;
+      this.startBtn.disabled = true;
+      this.pauseBtn.disabled = false;
+      this.resumeBtn.disabled = true;
+      this.animate();
+    }
+
+    reset() {
+      this.isRunning = false;
+      this.isPaused = false;
+      this.time = 0;
+      this.startBtn.disabled = false;
+      this.pauseBtn.disabled = true;
+      this.resumeBtn.disabled = true;
+      
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+      
+      this.car1.classList.remove('no-drag');
+      this.car2.classList.remove('no-drag');
+      
+      this.data = { time: [], position1: [], position2: [], velocity1: [], velocity2: [] };
+      
+      const params = this.getParameters();
+      this.x1 = 0.5;
+      this.x2 = params.railLength - params.carSize - 0.5;
+      this.v1 = params.velocity1;
+      this.v2 = params.velocity2;
+      
+      this.updateCarLabels();
+      this.updateDisplay();
+      this.updateAxis();
+      this.initializePlots();
+    }
+
+    clearAndResetPlots() {
+      const config = { 
+        displayModeBar: false, 
+        responsive: true,
+        staticPlot: false
+      };
+      
+      Plotly.react('positionPlot', [
+        { x: [], y: [], name: 'Car 1 Position', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+        { x: [], y: [], name: 'Car 2 Position', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+      ],
+      {
+        ...this.getPlotLayout(),
+        title: { text: 'Position vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+        yaxis: { ...this.getPlotLayout().yaxis, title: 'Car 1 Position (m)' },
+        yaxis2: { ...this.getPlotLayout().yaxis2, title: 'Car 2 Position (m)' }
+      }, config);
+      
+      Plotly.react('velocityPlot', [
+        { x: [], y: [], name: 'Car 1 Velocity', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+        { x: [], y: [], name: 'Car 2 Velocity', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+      ],
+      {
+        ...this.getPlotLayout(),
+        title: { text: 'Velocity vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+        yaxis: { ...this.getPlotLayout().yaxis, title: 'Car 1 Velocity (m/s)' },
+        yaxis2: { ...this.getPlotLayout().yaxis2, title: 'Car 2 Velocity (m/s)' }
+      }, config);
+    }
+
+    animate() {
+      if (!this.isRunning) return;
+      
+      this.updatePhysics();
+      this.updateDisplay();
+      this.updatePlots();
+      
+      this.time += this.dt * this.speedMultiplier;
+      this.timeDisplay.textContent = this.time.toFixed(2);
+      
+      this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    updatePhysics() {
+      const effectiveDt = this.dt * this.speedMultiplier;
+      
+      // 마찰력 적용
+      if (this.frictionCoeff > 0) {
+        const friction1 = this.frictionCoeff * this.mass1 * this.g;
+        const friction2 = this.frictionCoeff * this.mass2 * this.g;
+        
+        if (this.v1 > 0) {
+          this.v1 = Math.max(0, this.v1 - (friction1 / this.mass1) * effectiveDt);
+        } else if (this.v1 < 0) {
+          this.v1 = Math.min(0, this.v1 + (friction1 / this.mass1) * effectiveDt);
+        }
+        
+        if (this.v2 > 0) {
+          this.v2 = Math.max(0, this.v2 - (friction2 / this.mass2) * effectiveDt);
+        } else if (this.v2 < 0) {
+          this.v2 = Math.min(0, this.v2 + (friction2 / this.mass2) * effectiveDt);
+        }
+      }
+      
+      // 위치 업데이트
+      this.x1 += this.v1 * effectiveDt;
+      this.x2 += this.v2 * effectiveDt;
+      
+      // 벽 충돌
+      if (this.x1 <= 0) {
+        this.v1 = Math.abs(this.v1);
+        this.x1 = 0;
+      }
+      if (this.x1 >= this.railLength - this.carSize) {
+        this.v1 = -Math.abs(this.v1);
+        this.x1 = this.railLength - this.carSize;
+      }
+      if (this.x2 <= 0) {
+        this.v2 = Math.abs(this.v2);
+        this.x2 = 0;
+      }
+      if (this.x2 >= this.railLength - this.carSize) {
+        this.v2 = -Math.abs(this.v2);
+        this.x2 = this.railLength - this.carSize;
+      }
+      
+      // 카트 간 충돌 검사
+      const car1Right = this.x1 + this.carSize;
+      const car2Right = this.x2 + this.carSize;
+      
+      if ((this.x1 < this.x2 && car1Right > this.x2 && this.v1 > this.v2) ||
+          (this.x2 < this.x1 && car2Right > this.x1 && this.v2 > this.v1)) {
+        
+        if (this.collisionType === 'elastic') {
+          // 탄성 충돌
+          const v1_new = ((this.mass1 - this.mass2) * this.v1 + 2 * this.mass2 * this.v2) / (this.mass1 + this.mass2);
+          const v2_new = ((this.mass2 - this.mass1) * this.v2 + 2 * this.mass1 * this.v1) / (this.mass1 + this.mass2);
+          this.v1 = v1_new;
+          this.v2 = v2_new;
+        } else {
+          // 완전 비탄성 충돌
+          const v_final = (this.mass1 * this.v1 + this.mass2 * this.v2) / (this.mass1 + this.mass2);
+          this.v1 = v_final;
+          this.v2 = v_final;
+        }
+        
+        // 겹침 해결
+        if (this.x1 < this.x2) {
+          this.x2 = this.x1 + this.carSize;
+        } else {
+          this.x1 = this.x2 + this.carSize;
+        }
+      }
+      
+      // 데이터 저장
+      this.data.time.push(this.time);
+      this.data.position1.push(this.x1);
+      this.data.position2.push(this.x2);
+      this.data.velocity1.push(this.v1);
+      this.data.velocity2.push(this.v2);
+    }
+
+    updateDisplay() {
+      const railWidth = this.rail.offsetWidth;
+      const params = this.getParameters();
+      const carSizePixels = (params.carSize / params.railLength) * railWidth;
+      
+      // 카트 크기 설정
+      this.car1.style.width = `${carSizePixels}px`;
+      this.car1.style.height = window.innerWidth < 480 ? '30px' : '40px';
+      this.car2.style.width = `${carSizePixels}px`;
+      this.car2.style.height = window.innerWidth < 480 ? '30px' : '40px';
+      
+      // 카트 색상 설정
+      this.car1.style.backgroundColor = COLOR1;
+      this.car2.style.backgroundColor = COLOR2;
+      
+      // 카트 라벨 업데이트
+      this.updateCarLabels();
+      
+      // 카트 위치 설정
+      const pos1 = (this.x1 / params.railLength) * railWidth;
+      const pos2 = (this.x2 / params.railLength) * railWidth;
+      
+      this.car1.style.left = `${pos1}px`;
+      this.car2.style.left = `${pos2}px`;
+    }
+
+    updatePlots(forceUpdate = false) {
+      // 성능을 위해 3프레임마다 업데이트 (모바일에서는 6프레임마다)
+      const updateInterval = window.innerWidth < 768 ? 6 : 3;
+      
+      if ((this.data.time.length % updateInterval === 0 && this.data.time.length > 0) || forceUpdate) {
+        const config = { 
+          displayModeBar: false, 
+          responsive: true,
+          staticPlot: false
+        };
+        
+        Plotly.react('positionPlot', [
+          { x: [...this.data.time], y: [...this.data.position1], name: 'Car 1 Position', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+          { x: [...this.data.time], y: [...this.data.position2], name: 'Car 2 Position', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+        ],
+        {
+          ...this.getPlotLayout(),
+          title: { text: 'Position vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+          yaxis: { ...this.getPlotLayout().yaxis, title: 'Car 1 Position (m)' },
+          yaxis2: { ...this.getPlotLayout().yaxis2, title: 'Car 2 Position (m)' }
+        }, config);
+        
+        Plotly.react('velocityPlot', [
+          { x: [...this.data.time], y: [...this.data.velocity1], name: 'Car 1 Velocity', line: { color: COLOR1, width: 2 }, type: 'scatter', yaxis: 'y' },
+          { x: [...this.data.time], y: [...this.data.velocity2], name: 'Car 2 Velocity', line: { color: COLOR2, width: 2 }, type: 'scatter', yaxis: 'y2' }
+        ],
+        {
+          ...this.getPlotLayout(),
+          title: { text: 'Velocity vs Time', font: { size: window.innerWidth < 768 ? 14 : 16 } },
+          yaxis: { ...this.getPlotLayout().yaxis, title: 'Car 1 Velocity (m/s)' },
+          yaxis2: { ...this.getPlotLayout().yaxis2, title: 'Car 2 Velocity (m/s)' }
+        }, config);
+      }
+    }
+
+    downloadData() {
+      if (this.data.time.length === 0) {
+        alert('시뮬레이션을 실행한 후 데이터를 다운로드할 수 있습니다.');
+        return;
+      }
+      
+      let csvContent = 'Time(s),Position1(m),Position2(m),Velocity1(m/s),Velocity2(m/s)\n';
+      for (let i = 0; i < this.data.time.length; i++) {
+        csvContent += `${this.data.time[i].toFixed(3)},${this.data.position1[i].toFixed(3)},${this.data.position2[i].toFixed(3)},${this.data.velocity1[i].toFixed(3)},${this.data.velocity2[i].toFixed(3)}\n`;
+      }
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'collision_simulation_data.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // Plotly가 로드된 후 시뮬레이션 초기화
+  function initializeSimulation() {
+    if (typeof Plotly !== 'undefined') {
+      window[SimNamespace] = new CollisionSimulation();
+    } else {
+      // Plotly가 아직 로드되지 않았으면 잠시 후 다시 시도
+      setTimeout(initializeSimulation, 100);
+    }
+  }
+
+  // DOM이 준비되면 초기화
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSimulation);
+  } else {
+    initializeSimulation();
+  }
+})();
+</script>
+</body>
+</html>

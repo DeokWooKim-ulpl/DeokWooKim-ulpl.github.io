@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultrafast pulse parameter calculator</title>
+</head>
+<body>
+<!-- Google Sites용 초고속 펄스 파라미터 계산기 (모바일 반응형) -->
+<div id="pulse-param-calculator-container">
+  <style>
+    #pulse-param-calculator-container {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      color: #333;
+      max-width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    #pulse-param-calculator-container * {
+      box-sizing: border-box;
+    }
+    
+    .param-calc-title {
+      font-size: clamp(18px, 4vw, 28px);
+      margin-bottom: 30px;
+      text-align: center;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .row-container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+      .row-container {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+
+    .table-box {
+      flex: 1;
+      min-width: 300px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    @media (max-width: 768px) {
+      .table-box {
+        min-width: 100%;
+      }
+    }
+
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .param-table th {
+      text-align: center;
+      padding: 15px 12px;
+      background-color: #afafaf;
+      color: black;
+      border: none;
+      font-size: clamp(13px, 2.5vw, 16px);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .param-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+      text-align: center;
+    }
+    
+    @media (max-width: 480px) {
+      .param-table td {
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+    }
+
+    .param-input {
+      width: 100%;
+      max-width: 180px;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background-color: #fff;
+      text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+      .param-input {
+        max-width: 140px;
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .param-input {
+        max-width: 100px;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+    }
+
+    .param-input:focus {
+      outline: none;
+      border-color: #afafaf;
+      box-shadow: 0 0 0 3px rgba(175, 175, 175, 0.1);
+      background-color: #f8f9fa;
+    }
+
+    .param-input:read-only {
+      background-color: #f5f5f5;
+      border-color: #ddd;
+      color: #555;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    .unit-text {
+      color: #6c757d;
+      font-size: 13px;
+      font-weight: 500;
+      margin-left: 6px;
+      white-space: nowrap;
+    }
+    
+    @media (max-width: 480px) {
+      .unit-text {
+        font-size: 11px;
+        margin-left: 4px;
+      }
+    }
+
+    .equals-symbol {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      padding: 0 8px;
+    }
+    
+    @media (max-width: 480px) {
+      .equals-symbol {
+        font-size: 16px;
+        padding: 0 4px;
+      }
+    }
+
+    /* 전체 너비 입력 필드 */
+    .full-width-cell {
+      text-align: center;
+    }
+    
+    .full-width-cell .param-input {
+      max-width: 300px;
+      width: 90%;
+    }
+    
+    @media (max-width: 768px) {
+      .full-width-cell .param-input {
+        max-width: 250px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .full-width-cell .param-input {
+        max-width: 200px;
+      }
+    }
+
+    /* 레이블 셀 스타일 */
+    .label-cell {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #495057;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.3;
+      padding: 12px 15px;
+    }
+    
+    @media (max-width: 480px) {
+      .label-cell {
+        font-size: 11px;
+        padding: 10px 8px;
+      }
+    }
+
+    /* 입력 컨테이너 */
+    .input-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    /* 호버 효과 */
+    .param-table tr:hover td {
+      background-color: #f8f9fa;
+    }
+    
+    .param-table tr:hover .label-cell {
+      background-color: #e9ecef;
+    }
+
+    /* 터치 디바이스용 개선 */
+    @media (hover: none) and (pointer: coarse) {
+      .param-input {
+        padding: 12px 14px;
+        font-size: 16px; /* iOS 줌 방지 */
+        border-radius: 10px;
+      }
+      
+      .param-table td {
+        padding: 15px 10px;
+      }
+    }
+
+    /* 작은 화면에서 테이블 스크롤 */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    @media (max-width: 480px) {
+      .table-scroll {
+        margin: 0 -10px;
+        padding: 0 10px;
+      }
+    }
+
+    /* 계산 결과 강조 */
+    .calculated-value {
+      background-color: #f5f5f5 !important;
+      border-color: #ddd !important;
+      font-weight: 700;
+      color: #555;
+    }
+
+    /* 프린트 스타일 */
+    @media print {
+      #pulse-param-calculator-container {
+        background-color: white;
+        padding: 10px;
+      }
+      
+      .table-box {
+        border: 1px solid #000;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      
+      .param-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+      }
+    }
+  </style>
+
+  <h1 class="param-calc-title">Ultrafast Pulse Parameter Calculator</h1>
+  
+  <!-- Section 1: Wavelength + Bandwidth -->
+  <div class="row-container">
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="3">Measured Central Wavelength (λ₀)</th>
+          </tr>
+          <tr>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input1" placeholder="0" step="any">
+              <span class="unit-text">[nm]</span>
+            </td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input2" placeholder="0" step="any">
+              <span class="unit-text">[μm]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="3">Measured Spectral Bandwidth (Δλ ↔ Δν)</th>
+          </tr>
+          <tr>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input3" placeholder="0" step="any">
+              <span class="unit-text">[nm]</span>
+            </td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input4" placeholder="0" step="any">
+              <span class="unit-text">[THz]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Pulse Duration + TBP -->
+  <div class="row-container">
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="3">Measured Pulse Duration (Δτ)</th>
+          </tr>
+          <tr>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input5" placeholder="0" step="any">
+              <span class="unit-text">[fs]</span>
+            </td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input" id="input6" placeholder="0" step="any">
+              <span class="unit-text">[ps]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="2">Time-Bandwidth Product (TBP = Δτ × Δν)</th>
+          </tr>
+          <tr>
+            <td colspan="2" class="full-width-cell">
+              <input type="number" class="param-input calculated-value" id="input7" placeholder="TBP" readonly>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Ideal Values -->
+  <div class="row-container">
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="3">Ideal Pulse Duration for Given Bandwidth</th>
+          </tr>
+          <tr>
+            <td class="label-cell">Soliton (sech², TBP=0.315)</td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input calculated-value" id="input9" placeholder="0" readonly>
+              <span class="unit-text">[fs]</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="label-cell">Gaussian (TBP=0.44)</td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input calculated-value" id="input10" placeholder="0" readonly>
+              <span class="unit-text">[fs]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-box">
+      <div class="table-scroll">
+        <table class="param-table">
+          <tr>
+            <th colspan="3">Ideal Spectral Bandwidth for Given Pulse Duration</th>
+          </tr>
+          <tr>
+            <td class="label-cell">Soliton (sech², TBP=0.315)</td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input calculated-value" id="input11" placeholder="0" readonly>
+              <span class="unit-text">[nm]</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="label-cell">Gaussian (TBP=0.44)</td>
+            <td class="equals-symbol">=</td>
+            <td class="input-container">
+              <input type="number" class="param-input calculated-value" id="input12" placeholder="0" readonly>
+              <span class="unit-text">[nm]</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 네임스페이스를 통한 전역 변수 충돌 방지
+  const ParamCalcNamespace = 'ParamCalc_' + Date.now();
+  
+  class UltrafastPulseCalculator {
+    constructor() {
+      this.initializeElements();
+      this.initializeConstants();
+      this.setupEventListeners();
+      this.isUpdating = false;
+    }
+    
+    initializeElements() {
+      this.input1 = document.getElementById("input1");  // λ [nm]
+      this.input2 = document.getElementById("input2");  // λ [μm]
+      this.input3 = document.getElementById("input3");  // Δλ [nm]
+      this.input4 = document.getElementById("input4");  // Δν [THz]
+      this.input5 = document.getElementById("input5");  // Δτ [fs]
+      this.input6 = document.getElementById("input6");  // Δτ [ps]
+      this.input7 = document.getElementById("input7");  // TBP
+      this.input9 = document.getElementById("input9");  // Ideal τ soliton [fs]
+      this.input10 = document.getElementById("input10"); // Ideal τ gaussian [fs]
+      this.input11 = document.getElementById("input11"); // Ideal λ soliton [nm]
+      this.input12 = document.getElementById("input12"); // Ideal λ gaussian [nm]
+    }
+    
+    initializeConstants() {
+      this.C = 299792458;  // 광속 [m/s]
+      this.sech_c = 0.315; // sech² TBP
+      this.gaus_c = 0.44;  // Gaussian TBP
+    }
+    
+    setupEventListeners() {
+      // 파장 단위 변환 (nm ↔ μm)
+      this.input1.addEventListener("input", () => {
+        this.convertWavelengthFromNm();
+        this.updateFromBandwidthNm();
+        this.updateIdealPulseAndBandwidth();
+      });
+      this.input2.addEventListener("input", () => {
+        this.convertWavelengthFromUm();
+        this.updateFromBandwidthNm();
+        this.updateIdealPulseAndBandwidth();
+      });
+      
+      // 대역폭 변환 (Δλ ↔ Δν)
+      this.input3.addEventListener("input", () => {
+        this.updateFromBandwidthNm();
+        this.updateTBP();
+        this.updateIdealPulseAndBandwidth();
+      });
+      this.input4.addEventListener("input", () => {
+        this.updateFromBandwidthTHz();
+        this.updateTBP();
+        this.updateIdealPulseAndBandwidth();
+      });
+      
+      // 펄스 지속시간 단위 변환 (fs ↔ ps)
+      this.input5.addEventListener("input", () => {
+        this.convertDurationFromFs();
+        this.updateTBP();
+        this.updateIdealPulseAndBandwidth();
+      });
+      this.input6.addEventListener("input", () => {
+        this.convertDurationFromPs();
+        this.updateTBP();
+        this.updateIdealPulseAndBandwidth();
+      });
+    }
+    
+    convertWavelengthFromNm() {
+      if (this.isUpdating) return;
+      this.isUpdating = true;
+      const val = parseFloat(this.input1.value);
+      this.input2.value = isNaN(val) ? "" : (val * 0.001).toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    convertWavelengthFromUm() {
+      if (this.isUpdating) return;
+      this.isUpdating = true;
+      const val = parseFloat(this.input2.value);
+      this.input1.value = isNaN(val) ? "" : (val * 1000).toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    convertDurationFromFs() {
+      if (this.isUpdating) return;
+      this.isUpdating = true;
+      const val = parseFloat(this.input5.value);
+      this.input6.value = isNaN(val) ? "" : (val * 0.001).toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    convertDurationFromPs() {
+      if (this.isUpdating) return;
+      this.isUpdating = true;
+      const val = parseFloat(this.input6.value);
+      this.input5.value = isNaN(val) ? "" : (val * 1000).toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    updateFromBandwidthNm() {
+      if (this.isUpdating) return;
+      const lambda = parseFloat(this.input1.value);  // [nm]
+      const deltaLambda = parseFloat(this.input3.value);  // [nm]
+      
+      if (isNaN(lambda) || isNaN(deltaLambda)) {
+        this.input4.value = "";
+        return;
+      }
+      
+      this.isUpdating = true;
+      // Δν = c × Δλ / λ²
+      const deltaFreq = ((this.C / (lambda ** 2 * 1e-18)) * deltaLambda * 1e-9) / 1e12;
+      this.input4.value = deltaFreq.toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    updateFromBandwidthTHz() {
+      if (this.isUpdating) return;
+      const lambda = parseFloat(this.input1.value);  // [nm]
+      const deltaFreq = parseFloat(this.input4.value);  // [THz]
+      
+      if (isNaN(lambda) || isNaN(deltaFreq)) {
+        this.input3.value = "";
+        return;
+      }
+      
+      this.isUpdating = true;
+      // Δλ = λ² × Δν / c
+      const deltaLambda = ((lambda ** 2 * 1e-18) / this.C) * deltaFreq * 1e12 / 1e-9;
+      this.input3.value = deltaLambda.toFixed(6);
+      this.isUpdating = false;
+    }
+    
+    updateTBP() {
+      const bandwidth = parseFloat(this.input4.value);  // [THz]
+      const duration = parseFloat(this.input5.value);   // [fs]
+      
+      if (isNaN(bandwidth) || isNaN(duration)) {
+        this.input7.value = "";
+        return;
+      }
+      
+      // TBP = Δν × Δτ
+      const tbp = bandwidth * 1e12 * duration * 1e-15;
+      this.input7.value = tbp.toFixed(6);
+    }
+    
+    updateIdealPulseAndBandwidth() {
+      const bandwidth = parseFloat(this.input4.value);  // [THz]
+      const duration = parseFloat(this.input5.value);   // [fs]
+      const centerWavelength = parseFloat(this.input1.value);  // [nm]
+      
+      // 주어진 대역폭에 대한 이상적인 펄스 지속시간 계산
+      if (!isNaN(bandwidth) && bandwidth !== 0) {
+        // Δτ_ideal = TBP / Δν
+        const idealDurationSoliton = this.sech_c / (bandwidth * 1e12) * 1e15;
+        const idealDurationGaussian = this.gaus_c / (bandwidth * 1e12) * 1e15;
+        
+        this.input9.value = idealDurationSoliton.toFixed(6);
+        this.input10.value = idealDurationGaussian.toFixed(6);
+      } else {
+        this.input9.value = "";
+        this.input10.value = "";
+      }
+      
+      // 주어진 펄스 지속시간에 대한 이상적인 스펙트럼 대역폭 계산
+      if (!isNaN(duration) && duration !== 0 && !isNaN(centerWavelength)) {
+        // Δλ_ideal = TBP × λ² / (c × Δτ)
+        const factor = (centerWavelength * 1e-9) ** 2 / this.C * 1e9;
+        const idealBandwidthSoliton = this.sech_c / (duration * 1e-15) * factor;
+        const idealBandwidthGaussian = this.gaus_c / (duration * 1e-15) * factor;
+        
+        this.input11.value = idealBandwidthSoliton.toFixed(6);
+        this.input12.value = idealBandwidthGaussian.toFixed(6);
+      } else {
+        this.input11.value = "";
+        this.input12.value = "";
+      }
+    }
+  }
+
+  // DOM이 준비되면 계산기 초기화
+  function initializeParamCalculator() {
+    window[ParamCalcNamespace] = new UltrafastPulseCalculator();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeParamCalculator);
+  } else {
+    initializeParamCalculator();
+  }
+})();
+</script>
+</body>
+</html>

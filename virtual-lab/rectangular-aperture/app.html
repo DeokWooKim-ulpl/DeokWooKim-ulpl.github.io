@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rectangular Aperture Diffraction</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      max-width: 1800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .controls, .advanced-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      flex: 1 1 220px;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+    }
+    .plots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    #plot3d, #crossPlot, #contourPlot {
+      height: 500px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fraunhofer diffraction pattern calculator: 2D rectangular aperture</h1>
+  <h2>(Far-field-diffraction pattern without Fresnel integral)</h2>
+
+<div class="controls">
+  <div class="input-group">
+    <label for="width">Width (a) [mm]</label>
+    <input type="number" id="width" value="0.5" step = "0.1">
+  </div>
+  <div class="input-group">
+    <label for="height">Height (b) [mm]</label>
+    <input type="number" id="height" value="0.5" step = "0.1" >
+  </div>
+  <div class="input-group">
+    <label for="lambda">Wavelength (λ) [nm]</label>
+    <input type="number" id="lambda" value="632.8">
+  </div>
+  <div class="input-group">
+    <label for="screen">Screen Distance from aperture (z) [m]</label>
+    <input type="number" id="screen" value="1" step = "0.1">
+  </div>
+</div>
+
+<div class="advanced-controls">
+  <div class="input-group">
+    <label for="viewAngle">3D View Angle (polar,azim)</label>
+    <input type="text" id="viewAngle" value="45,45">
+  </div>
+  <div class="input-group">
+    <label for="xRange">Cross-section X-range [cm] (xmin,xmax)</label>
+    <input type="text" id="xRange" value="-1,1">
+  </div>
+  <div class="input-group">
+    <label for="range">X-Y Range [cm]</label>
+    <input type="number" id="range" value="1">
+  </div>
+  <div class="input-group">
+    <label for="res">Resolution (Num. of points per axis)</label>
+    <input type="number" id="res" value="100">
+  </div>
+  <div class="input-group">
+    <label for="intensityScale">Intensity Scale</label>
+    <select id="intensityScale">
+      <option value="gamma" selected>Gamma (γ=0.5)</option>
+      <option value="linear">Linear</option>
+      </select>
+  </div>
+  <div class="input-group">
+    <label for="colormap">Colormap</label>
+    <select id="colormap">
+      <option value="Rainbow" selected >Rainbow</option>
+      <option value="Viridis">Viridis</option>
+      <option value="Plasma">Plasma</option>
+      <option value="Hot">Hot</option>
+      <option value="Jet">Jet</option>
+      <option value="Turbo">Turbo</option>
+    </select>
+  </div>
+</div>
+
+<div class="input-group">
+  <label for="exportSelect">Export simulated data</label>
+  <select id="exportSelect">
+    <option value="xy">X-Y Grid</option>
+    <option value="intensity">Intensity Map</option>
+    <option value="xprofile">X-axis Profile</option>
+    <option value="yprofile">Y-axis Profile</option>
+  </select>
+  <button onclick="downloadData()">Export (.csv)</button>
+</div>
+
+<div class="plots">
+  <div id="plot3d"></div>
+  <div id="crossPlot"></div>
+  <div id="contourPlot"></div>
+</div>
+
+<script>
+function sinc(x) {
+  return x === 0 ? 1 : Math.sin(x) / x;
+}
+
+let xVals = [], yVals = [], zVals = [];
+let xProfile = [], yProfile = [];
+
+function updatePlot() {
+  const a = parseFloat(document.getElementById("width").value) * 1e-3;
+  const b = parseFloat(document.getElementById("height").value) * 1e-3;
+  const lambda = parseFloat(document.getElementById("lambda").value) * 1e-9;
+  const z = parseFloat(document.getElementById("screen").value);
+  const range = parseFloat(document.getElementById("range").value) / 100;
+  const res = parseInt(document.getElementById("res").value);
+  const angle = document.getElementById("viewAngle").value.split(',').map(Number);
+  const xRangeVals = document.getElementById("xRange").value.split(',').map(Number);
+  const xMin = xRangeVals[0];
+  const xMax = xRangeVals[1];
+  const intensityScale = document.getElementById("intensityScale").value;
+  const colormap = document.getElementById("colormap").value;
+
+  const dx = (2 * range) / res;
+  xVals = [], yVals = [], zVals = [];
+  let maxI = 0;
+
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    xVals.push(xi * 100);
+  }
+  for (let j = 0; j < res; j++) {
+    const yj = -range + j * dx;
+    yVals.push(yj * 100);
+  }
+
+  for (let i = 0; i < res; i++) {
+    const xi = -range + i * dx;
+    let row = [];
+    for (let j = 0; j < res; j++) {
+      const yj = -range + j * dx;
+      const alpha = Math.PI * a * xi / (lambda * z);
+      const beta  = Math.PI * b * yj / (lambda * z);
+      const I = Math.pow(sinc(alpha), 2) * Math.pow(sinc(beta), 2);
+      row.push(I);
+      maxI = Math.max(maxI, I);
+    }
+    zVals.push(row);
+  }
+
+  for (let i = 0; i < res; i++) {
+    for (let j = 0; j < res; j++) {
+      let normI = zVals[i][j] / maxI;
+      switch(intensityScale) {
+        case 'log':
+          normI = Math.log10(normI + 1e-6) / Math.log10(1 + 1e-6);
+          break;
+        case 'gamma':
+          normI = Math.pow(normI, 0.5);
+          break;
+        case 'sqrt':
+          normI = Math.sqrt(normI);
+          break;
+        case 'linear':
+        default:
+          break;
+      }
+      zVals[i][j] = Math.max(0, normI);
+    }
+  }
+
+  const surfaceData = {
+    z: zVals, x: xVals, y: yVals,
+    type: "surface", colorscale: colormap, showscale: true,
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  };
+
+  Plotly.newPlot("plot3d", [surfaceData], {
+    title: "Diffraction Pattern (3D)",
+    scene: {
+      xaxis: { title: "x [cm]" },
+      yaxis: { title: "y [cm]" },
+      zaxis: { title: "Intensity" },
+      camera: {
+        eye: {
+          x: Math.cos(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          y: Math.sin(angle[1]*Math.PI/180)*Math.sin(angle[0]*Math.PI/180),
+          z: Math.cos(angle[0]*Math.PI/180)
+        }
+      }
+    }
+  });
+
+  const mid = Math.floor(res / 2);
+  xProfile = xVals.map((x, i) => ({ x: x, y: zVals[i][mid] }));
+  yProfile = yVals.map((y, j) => ({ x: y, y: zVals[mid][j] }));
+
+  Plotly.newPlot("crossPlot", [
+    {
+      x: xProfile.map(p => p.x), y: xProfile.map(p => p.y),
+      name: "X-axis", yaxis: "y1", mode: "lines", line: { color: "blue" }
+    },
+    {
+      x: yProfile.map(p => p.x), y: yProfile.map(p => p.y),
+      name: "Y-axis", yaxis: "y2", mode: "lines", line: { color: "red", dash: "dot" }
+    }
+  ], {
+    title: "Diffraction pattern projected to x,y axis",
+    xaxis: { title: "Position [cm]", range: [xMin, xMax] },
+    yaxis: {
+      title: "X-axis Intensity", titlefont: { color: "blue" }, tickfont: { color: "blue" }
+    },
+    yaxis2: {
+      title: "Y-axis Intensity", titlefont: { color: "red" }, tickfont: { color: "red" },
+      overlaying: "y", side: "right"
+    }
+  });
+
+  Plotly.newPlot("contourPlot", [{
+    z: zVals, x: xVals, y: yVals,
+    type: "contour",
+    colorscale: colormap,
+    contours: { coloring: "heatmap" },
+    colorbar: {
+      title: "Normalized Intensity",
+      titleside: "right"
+    }
+  }], {
+    title: "Diffraction pattern (2D contour plot)",
+    xaxis: { title: "x [cm]" },
+    yaxis: { title: "y [cm]" }
+  });
+}
+
+function downloadData() {
+  const type = document.getElementById("exportSelect").value;
+  let csv = "";
+  if (type === "xy") {
+    csv = "x[cm],y[cm]\n";
+    xVals.forEach(x => yVals.forEach(y => csv += `${x},${y}\n`));
+  } else if (type === "intensity") {
+    csv = "x/y," + yVals.join(",") + "\n";
+    xVals.forEach((x, i) => {
+      csv += x + "," + zVals[i].join(",") + "\n";
+    });
+  } else if (type === "xprofile") {
+    csv = "x[cm],Intensity\n";
+    xProfile.forEach(p => csv += `${p.x},${p.y}\n`);
+  } else if (type === "yprofile") {
+    csv = "y[cm],Intensity\n";
+    yProfile.forEach(p => csv += `${p.x},${p.y}\n`);
+  }
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${type}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+["width", "height", "lambda", "screen", "range", "res", "viewAngle", "xRange", "intensityScale", "colormap"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updatePlot)
+);
+
+updatePlot();
+</script>
+</body>
+</html>

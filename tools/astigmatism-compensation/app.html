@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Cavity Astigmatism Compensation Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: white;
+            border: 1px solid #ccc;
+            flex: 1;
+        }
+        
+        .panel-header {
+            background-color: #999;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .panel-content {
+            padding: 15px;
+        }
+        
+        .parameter-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        .parameter-label {
+            width: 120px;
+            color: #333;
+        }
+        
+        .parameter-inputs {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        .input-group input {
+            width: 70px;
+            padding: 4px;
+            border: 1px solid #ccc;
+            text-align: center;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+        
+        .input-group label {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .result-value {
+            background-color: #e6f3ff;
+            border: 1px solid #ccc;
+            padding: 4px;
+            text-align: center;
+            font-size: 11px;
+            min-width: 70px;
+        }
+        
+        .chart-container {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .chart-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        canvas {
+            max-height: 400px;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 8px;
+            border: 1px solid #e57373;
+            margin: 10px 0;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .formula-box {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spherical Mirror Tilt Angle Calculator</h1>
+        
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-header">Input Parameters</div>
+                <div class="panel-content">
+                    <div class="parameter-row">
+                        <div class="parameter-label">Refractive Index</div>
+                        <div class="parameter-inputs">
+                            <div class="input-group">
+                                <input type="number" id="refractive" value="1.95" step="0.01" min="1.1">
+                                <label>n</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="parameter-row">
+                        <div class="parameter-label">Radius of Curvature</div>
+                        <div class="parameter-inputs">
+                            <div class="input-group">
+                                <input type="number" id="radius" value="30" step="0.1" min="1">
+                                <label>[mm]</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="parameter-row">
+                        <div class="parameter-label">Crystal Length</div>
+                        <div class="parameter-inputs">
+                            <div class="input-group">
+                                <input type="number" id="length" value="3.6" step="0.1" min="0.1">
+                                <label>[mm]</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">Output Parameters</div>
+                <div class="panel-content">
+                    <div class="parameter-row">
+                        <div class="parameter-label">Tilt Angle</div>
+                        <div class="parameter-inputs">
+                            <div class="input-group">
+                                <div class="result-value" id="angleResult">--</div>
+                                <label>[deg]</label>
+                            </div>
+                            <div class="input-group">
+                                <div class="result-value" id="radianResult">--</div>
+                                <label>[rad]</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+
+    </div>
+
+    <script>
+        // Global variables
+        let chart;
+        
+        // Numerical solver using Newton-Raphson method
+        function solveEquation(n, R, Lc) {
+            const lhs = Lc * Math.sqrt(Math.pow(n, 4) - 1) * Math.sqrt(Math.pow(n, 2) - 1) / (R * Math.pow(n, 4));
+            
+            // Solve f(x) = lhs - (1/x - x) = 0 for x = cos(θ)
+            function f(x) {
+                return lhs - (1/x - x);
+            }
+            
+            function df(x) {
+                return 1/(x*x) - 1;
+            }
+            
+            // Initial guess (0 < cos(θ) < 1)
+            let x = 0.5;
+            let maxIterations = 100;
+            let tolerance = 1e-10;
+            
+            for (let i = 0; i < maxIterations; i++) {
+                let fx = f(x);
+                let dfx = df(x);
+                
+                if (Math.abs(fx) < tolerance) {
+                    break;
+                }
+                
+                if (Math.abs(dfx) < 1e-12) {
+                    throw new Error('Derivative too small, convergence failed');
+                }
+                
+                let newX = x - fx / dfx;
+                
+                // cos(θ) must be between 0 and 1
+                if (newX <= 0 || newX >= 1) {
+                    // Fall back to bisection method
+                    return bisectionMethod(n, R, Lc);
+                }
+                
+                if (Math.abs(newX - x) < tolerance) {
+                    break;
+                }
+                
+                x = newX;
+            }
+            
+            return x;
+        }
+        
+        // Bisection method as fallback
+        function bisectionMethod(n, R, Lc) {
+            const lhs = Lc * Math.sqrt(Math.pow(n, 4) - 1) * Math.sqrt(Math.pow(n, 2) - 1) / (R * Math.pow(n, 4));
+            
+            function f(x) {
+                return lhs - (1/x - x);
+            }
+            
+            let a = 0.001;
+            let b = 0.999;
+            let tolerance = 1e-10;
+            let maxIterations = 1000;
+            
+            if (f(a) * f(b) > 0) {
+                throw new Error('No solution exists in the given interval');
+            }
+            
+            for (let i = 0; i < maxIterations; i++) {
+                let c = (a + b) / 2;
+                let fc = f(c);
+                
+                if (Math.abs(fc) < tolerance || Math.abs(b - a) < tolerance) {
+                    return c;
+                }
+                
+                if (f(a) * fc < 0) {
+                    b = c;
+                } else {
+                    a = c;
+                }
+            }
+            
+            return (a + b) / 2;
+        }
+        
+        // Calculate angle function
+        function calculateAngle() {
+            try {
+                const n = parseFloat(document.getElementById('refractive').value);
+                const R = parseFloat(document.getElementById('radius').value) * 1e-3; // mm to m
+                const Lc = parseFloat(document.getElementById('length').value) * 1e-3; // mm to m
+                
+                // Validation
+                if (n <= 1) {
+                    throw new Error('Refractive index must be greater than 1');
+                }
+                if (R <= 0 || Lc <= 0) {
+                    throw new Error('Radius and crystal length must be positive');
+                }
+                
+                const cosTheta = solveEquation(n, R, Lc);
+                const thetaRad = Math.acos(cosTheta);
+                const thetaDeg = thetaRad * 180 / Math.PI;
+                
+                // Display results
+                document.getElementById('angleResult').textContent = thetaDeg.toFixed(2);
+                document.getElementById('radianResult').textContent = thetaRad.toFixed(4);
+                
+                // Hide error message
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                return { angle: thetaDeg, radian: thetaRad, cosTheta: cosTheta };
+                
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = 'Calculation Error: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('angleResult').textContent = '--';
+                document.getElementById('radianResult').textContent = '--';
+                return null;
+            }
+        }
+        
+        // Update chart function
+        function updateChart() {
+            const R = parseFloat(document.getElementById('radius').value) * 1e-3;
+            const Lc = parseFloat(document.getElementById('length').value) * 1e-3;
+            const nMin = parseFloat(document.getElementById('nMin').value);
+            const nMax = parseFloat(document.getElementById('nMax').value);
+            
+            if (nMin >= nMax) {
+                return;
+            }
+            
+            const nValues = [];
+            const angleValues = [];
+            
+            const steps = 100;
+            const stepSize = (nMax - nMin) / steps;
+            
+            for (let i = 0; i <= steps; i++) {
+                const n = nMin + i * stepSize;
+                try {
+                    if (n > 1) {
+                        const cosTheta = solveEquation(n, R, Lc);
+                        const thetaDeg = Math.acos(cosTheta) * 180 / Math.PI;
+                        nValues.push(n);
+                        angleValues.push(thetaDeg);
+                    }
+                } catch (error) {
+                    // Skip failed calculations
+                    continue;
+                }
+            }
+            
+            // Update chart
+            if (chart) {
+                chart.data.labels = nValues.map(n => n.toFixed(2));
+                chart.data.datasets[0].data = angleValues;
+                chart.update('none');
+            } else {
+                createChart(nValues, angleValues);
+            }
+        }
+        
+        // Create chart function
+        function createChart(nValues, angleValues) {
+            const ctx = document.getElementById('angleChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: nValues.map(n => n.toFixed(2)),
+                    datasets: [{
+                        label: 'Tilt Angle (deg)',
+                        data: angleValues,
+                        borderColor: '#4472C4',
+                        backgroundColor: 'rgba(68, 114, 196, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Refractive Index (n)',
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Tilt Angle (degrees)',
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Input parameters
+            document.getElementById('refractive').addEventListener('input', calculateAngle);
+            document.getElementById('radius').addEventListener('input', calculateAngle);
+            document.getElementById('length').addEventListener('input', calculateAngle);
+        }
+        
+        // Initialize
+        function initialize() {
+            setupEventListeners();
+            calculateAngle();
+        }
+        
+        // Load page
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>

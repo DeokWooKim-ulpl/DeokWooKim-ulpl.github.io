@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .controls-container {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            min-width: 180px;
+        }
+        .control-group.fixed {
+            background: #f5f5f5;
+        }
+        .control-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .dial-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .rotary-dial {
+            width: 60px;
+            height: 60px;
+            background: #1976d2;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dial-indicator {
+            width: 2px;
+            height: 20px;
+            background: white;
+            position: absolute;
+            transform-origin: center bottom;
+            bottom: 50%;
+        }
+        .dial-center {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            z-index: 1;
+        }
+        .fixed-amplitude {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+        }
+        .fixed-label {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .right-controls {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            min-width: 200px;
+        }
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .param-label {
+            background: #fff3e0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 120px;
+            text-align: center;
+        }
+        .param-input {
+            width: 70px;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .param-input:disabled {
+            background: #f0f0f0;
+        }
+        .slider-container {
+            margin-bottom: 20px;
+            max-width: 300px;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            cursor: pointer;
+        }
+        .resonance-panel {
+            padding: 15px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            min-width: 200px;
+            max-width: 250px;
+        }
+        .resonance-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2e7d32;
+            text-align: center;
+        }
+        .resonance-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+        .resonance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+        .resonance-mode {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .resonance-freq {
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .resonance-formula {
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+            line-height: 1.2;
+        }
+        .tube-type-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox {
+            width: 18px;
+            height: 18px;
+        }
+        .canvas-container {
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        @media (max-width: 900px) {
+            .controls-container { flex-direction: column; }
+        }
+        .instructions {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .instructions strong {
+            color: #333;
+        }
+        .instructions p {
+            margin-bottom: 8px;
+        }
+        .pause-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-left: 20px;
+        }
+        .pause-button.restart { background: #ff9800; }
+        .pause-button.restart:hover { background: #f57c00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Standing Wave Simulation: 1D closed tube</h1>
+        <!-- Top Controls -->
+
+                <!-- Instructions -->
+        <div class="instructions">
+            <p><strong>How to use it:</strong></p>
+            <p>• Adjust frequency using dial, slider </p>
+            <p>• <strong>Drag the MICROPHONE (orange dot) and WALL (dark rectangle) with mouse</strong> to change positions</p>
+            <p>• Closed tube: wall present (node at wall), Opened tube: no wall (antinode at end)</p>
+            <p>• <strong>Max. amplitude shows the envelope amplitude at microphone position</strong></p>
+            <p>• Try the ideal resonance frequencies shown above for maximum standing wave formation</p>
+        </div>
+        <p>   </p>
+
+        <div class="controls-container">
+            <div class="control-group">
+                <label class="control-label">Frequency [Hz]</label>
+                <div class="dial-container">
+                    <div class="rotary-dial" id="freqDial">
+                        <div class="dial-indicator" id="freqIndicator"></div>
+                        <div class="dial-center"></div>
+                    </div>
+                    <input type="number" id="freqInput" class="param-input" value="452" min="50" max="2000">
+                </div>
+                <input type="range" id="freqSlider" min="50" max="2000" value="452" class="slider">
+            </div>
+            <div class="control-group fixed">
+                <label class="control-label">Speaker amplitude [a.u.]</label>
+                <div class="fixed-amplitude">1.0</div>
+                <div class="fixed-label">Fixed</div>
+            </div>
+            <div class="right-controls">
+                <div class="param-row">
+                    <label class="param-label">Sound velocity [m/s]</label>
+                    <input type="number" id="soundVelocity" class="param-input" value="343">
+                </div>
+                <div class="param-row">
+                    <label class="param-label">Tube length [cm]</label>
+                    <input type="number" id="tubeLength" class="param-input" value="50" min="20" max="200">
+                </div>
+                <div class="param-row">
+                    <label class="param-label">Mic. position [cm]</label>
+                    <input type="number" id="micPosition" class="param-input" value="17.8" step="0.1">
+                </div>
+                <div class="param-row">
+                    <label class="param-label">Wall position [cm]</label>
+                    <input type="number" id="wallPosition" class="param-input" value="50" step="0.1">
+                </div>
+                <div class="param-row">
+                    <label class="param-label">Mic. amplitude [a.u.]</label>
+                    <input type="number" id="micAmplitude" class="param-input" value="0" readonly>
+                </div>
+                <div class="param-row">
+                    <label class="param-label">Max. amplitude [a.u.]</label>
+                    <input type="number" id="maxAmplitude" class="param-input" value="0" readonly>
+                </div>
+            </div>
+            <div class="resonance-panel">
+                <h3 class="resonance-title">Ideal Resonance Frequencies</h3>
+                <div class="resonance-grid" id="resonanceGrid"></div>
+                <div class="resonance-formula" id="resonanceFormula">
+                    Closed tube formula: f = (2m-1) × v / (4L)
+                </div>
+            </div>
+        </div>
+        <!-- Simulation Speed Control -->
+        <div class="slider-container">
+            <label class="control-label">Simulation Speed</label>
+            <div class="slider-row">
+                <span style="font-size: 12px;">0.001x</span>
+                <input type="range" id="speedSlider" min="-3" max="1" step="0.1" value="0" class="slider">
+                <span style="font-size: 12px;">10x</span>
+                <span id="speedDisplay" style="font-family: monospace; font-size: 12px; min-width: 60px;">1.000x</span>
+                <button id="pauseButton" class="pause-button">Pause</button>
+            </div>
+        </div>
+        <!-- Tube Type Selection -->
+        <div class="tube-type-container">
+            <label class="checkbox-container">
+                <input type="checkbox" id="closedTube" class="checkbox" checked>
+                <span>Closed tube</span>
+            </label>
+            <label class="checkbox-container">
+                <input type="checkbox" id="openedTube" class="checkbox">
+                <span>Opened tube</span>
+            </label>
+        </div>
+
+        <!-- Tube Animation -->
+        <div class="canvas-container">
+            <canvas id="waveCanvas" width="900" height="300"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+        // Simulation parameters
+        let frequency = 452;
+        const speakerAmplitude = 1.0;
+        let soundVelocity = 343;
+        let tubeLength = 50;
+        let micPosition = 17.8;
+        let wallPosition = 50;
+        let isClosedTube = true;
+        let simulationSpeed = 1.0;
+        let time = 0;
+        let isPaused = false;
+        let realTime = 0;
+        const BASE_TIME_STEP = 0.016;
+
+        let isDraggingMic = false, isDraggingWall = false;
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+
+        // DOM Elements
+        const elements = {
+            freqInput: document.getElementById('freqInput'),
+            freqSlider: document.getElementById('freqSlider'),
+            freqDial: document.getElementById('freqDial'),
+            freqIndicator: document.getElementById('freqIndicator'),
+            soundVelocity: document.getElementById('soundVelocity'),
+            tubeLength: document.getElementById('tubeLength'),
+            micPosition: document.getElementById('micPosition'),
+            wallPosition: document.getElementById('wallPosition'),
+            micAmplitude: document.getElementById('micAmplitude'),
+            maxAmplitude: document.getElementById('maxAmplitude'),
+            speedSlider: document.getElementById('speedSlider'),
+            speedDisplay: document.getElementById('speedDisplay'),
+            closedTube: document.getElementById('closedTube'),
+            openedTube: document.getElementById('openedTube'),
+            resonanceGrid: document.getElementById('resonanceGrid'),
+            resonanceFormula: document.getElementById('resonanceFormula'),
+            pauseButton: document.getElementById('pauseButton')
+        };
+
+        function init() {
+            realTime = 0;
+            time = 0;
+            
+            setupEventListeners();
+            updateResonanceFrequencies();
+            syncFrequencyControls();
+            
+            drawWave();
+            updateMaxAmplitude();
+            
+            animate();
+        }
+
+        // === Maximum amplitude calculation ===
+        function updateMaxAmplitude() {
+            const { k } = getWaveParameters();
+            let maxAmplitude;
+            
+            if (isClosedTube) {
+                if (micPosition > wallPosition) {
+                    maxAmplitude = 0;
+                } else {
+                    const L = wallPosition;
+                    // Standing wave envelope amplitude at microphone position
+                    maxAmplitude = speakerAmplitude * Math.abs(Math.sin(k * (L - micPosition)));
+                }
+            } else {
+                // Open tube standing wave envelope amplitude
+                maxAmplitude = speakerAmplitude * Math.abs(Math.cos(k * micPosition));
+            }
+            
+            if (elements.maxAmplitude) {
+                elements.maxAmplitude.value = maxAmplitude.toFixed(3);
+            }
+        }
+
+        function setupEventListeners() {
+            elements.freqInput.addEventListener('input', (e) => {
+                frequency = parseFloat(e.target.value);
+                syncFrequencyControls();
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.freqSlider.addEventListener('input', (e) => {
+                frequency = parseFloat(e.target.value);
+                syncFrequencyControls();
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.freqDial.addEventListener('click', handleDialClick);
+            
+            elements.soundVelocity.addEventListener('input', (e) => {
+                soundVelocity = parseFloat(e.target.value);
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.tubeLength.addEventListener('input', (e) => {
+                tubeLength = parseFloat(e.target.value);
+                elements.micPosition.max = tubeLength;
+                elements.wallPosition.max = tubeLength;
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.micPosition.addEventListener('input', (e) => {
+                micPosition = parseFloat(e.target.value);
+                if (isPaused) { updateStaticMicAmplitude(); drawWave(); }
+                updateMaxAmplitude();
+            });
+            elements.wallPosition.addEventListener('input', (e) => {
+                wallPosition = parseFloat(e.target.value);
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.speedSlider.addEventListener('input', (e) => {
+                simulationSpeed = Math.pow(10, parseFloat(e.target.value));
+                elements.speedDisplay.textContent = simulationSpeed.toFixed(3) + 'x';
+            });
+            
+            elements.pauseButton.addEventListener('click', () => {
+                if (isPaused) {
+                    isPaused = false;
+                    elements.pauseButton.textContent = 'Pause';
+                    elements.pauseButton.classList.remove('restart');
+                    elements.wallPosition.disabled = false;
+                    animate();
+                } else {
+                    isPaused = true;
+                    elements.pauseButton.textContent = 'Restart';
+                    elements.pauseButton.classList.add('restart');
+                    elements.wallPosition.disabled = true;
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                    updateStaticMicAmplitude();
+                    drawWave();
+                }
+            });
+            
+            elements.closedTube.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    isClosedTube = true;
+                    elements.openedTube.checked = false;
+                    elements.wallPosition.disabled = false;
+                } else {
+                    elements.openedTube.checked = true;
+                }
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+            elements.openedTube.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    isClosedTube = false;
+                    elements.closedTube.checked = false;
+                    elements.wallPosition.disabled = true;
+                } else {
+                    elements.closedTube.checked = true;
+                }
+                updateResonanceFrequencies();
+                updateMaxAmplitude();
+            });
+
+            // Canvas mouse events
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseUp);
+        }
+
+        function syncFrequencyControls() {
+            elements.freqInput.value = frequency;
+            elements.freqSlider.value = frequency;
+            updateDialIndicator();
+        }
+
+        function updateDialIndicator() {
+            const percentage = (frequency - 50) / (2000 - 50);
+            const rotation = percentage * 360;
+            elements.freqIndicator.style.transform = `rotate(${rotation}deg)`;
+        }
+
+        function handleDialClick(e) {
+            const rect = elements.freqDial.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+            const normalizedAngle = (angle + Math.PI * 2) % (Math.PI * 2);
+            const percentage = normalizedAngle / (Math.PI * 2);
+            frequency = 50 + (2000 - 50) * percentage;
+            frequency = Math.round(frequency);
+            syncFrequencyControls();
+            updateResonanceFrequencies();
+            updateMaxAmplitude();
+        }
+
+        function getResonanceFrequencies() {
+            const effectiveLength = isClosedTube ? wallPosition : tubeLength;
+            const resonances = [];
+            if (isClosedTube) {
+                for (let m = 1; m <= 5; m++) {
+                    const freq = ((2 * m - 1) * soundVelocity * 100) / (4 * effectiveLength);
+                    resonances.push({ mode: m, frequency: Math.round(freq * 10) / 10 });
+                }
+            } else {
+                for (let m = 1; m <= 5; m++) {
+                    const freq = (m * soundVelocity * 100) / (2 * effectiveLength);
+                    resonances.push({ mode: m, frequency: Math.round(freq * 10) / 10 });
+                }
+            }
+            return resonances;
+        }
+
+        function updateResonanceFrequencies() {
+            const resonances = getResonanceFrequencies();
+            elements.resonanceGrid.innerHTML = '';
+            resonances.forEach(res => {
+                const item = document.createElement('div');
+                item.className = 'resonance-item';
+                item.innerHTML = `
+                    <div class="resonance-mode">Mode ${res.mode}</div>
+                    <div class="resonance-freq">${res.frequency} Hz</div>
+                `;
+                elements.resonanceGrid.appendChild(item);
+            });
+            elements.resonanceFormula.textContent = isClosedTube
+                ? "Closed tube: f = (2m-1) × v / (4L)"
+                : "Open tube: f = m × v / (2L)";
+        }
+
+        function handleMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const pixelsPerCm = (canvas.width - 120) / tubeLength;
+            const tubeY = canvas.height * 0.6;
+            const micX = 60 + micPosition * pixelsPerCm;
+            if (Math.abs(x - micX) < 20 && Math.abs(y - (tubeY - 40)) < 20) {
+                isDraggingMic = true;
+                return;
+            }
+            if (isClosedTube && !isPaused) {
+                const wallX = 60 + wallPosition * pixelsPerCm;
+                if (Math.abs(x - wallX) < 20 && Math.abs(y - tubeY) < 60) {
+                    isDraggingWall = true;
+                    return;
+                }
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (!isDraggingMic && !isDraggingWall) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const pixelsPerCm = (canvas.width - 120) / tubeLength;
+            if (isDraggingMic) {
+                const newPos = Math.max(0, Math.min(tubeLength, (x - 60) / pixelsPerCm));
+                micPosition = Math.round(newPos * 10) / 10;
+                elements.micPosition.value = micPosition;
+                if (isPaused) { updateStaticMicAmplitude(); drawWave(); }
+                updateMaxAmplitude();
+            }
+            if (isDraggingWall && isClosedTube && !isPaused) {
+                const newPos = Math.max(10, Math.min(tubeLength, (x - 60) / pixelsPerCm));
+                wallPosition = Math.round(newPos * 10) / 10;
+                elements.wallPosition.value = wallPosition;
+                updateResonanceFrequencies();
+                if (micPosition > wallPosition) elements.micAmplitude.value = "0.000";
+                updateMaxAmplitude();
+            }
+        }
+
+        function handleMouseUp() {
+            isDraggingMic = false; 
+            isDraggingWall = false;
+        }
+
+        function getWaveParameters() {
+            const wavelength = (soundVelocity * 100) / frequency;
+            const k = (2 * Math.PI) / wavelength;
+            const omega = 2 * Math.PI * frequency;
+            return { wavelength, k, omega };
+        }
+
+        function updateMicAmplitude() {
+            const { k, omega } = getWaveParameters();
+            let amplitude;
+            
+            if (isClosedTube) {
+                if (micPosition > wallPosition) {
+                    amplitude = 0;
+                } else {
+                    const L = wallPosition;
+                    amplitude = speakerAmplitude * Math.sin(k * (L - micPosition)) * Math.cos(omega * realTime);
+                }
+            } else {
+                amplitude = speakerAmplitude * Math.cos(k * micPosition) * Math.cos(omega * realTime);
+            }
+            
+            // Mic amplitude 업데이트
+            if (elements.micAmplitude) {
+                elements.micAmplitude.value = Math.abs(amplitude).toFixed(3);
+            }
+        }
+
+        function updateStaticMicAmplitude() {
+            const { k, omega } = getWaveParameters();
+            let amplitude;
+            
+            if (isClosedTube) {
+                if (micPosition > wallPosition) {
+                    amplitude = 0;
+                } else {
+                    const L = wallPosition;
+                    // Pause 시점의 실제 amplitude (envelope × cos(ωt))
+                    amplitude = speakerAmplitude * Math.sin(k * (L - micPosition)) * Math.cos(omega * realTime);
+                }
+            } else {
+                // Open tube에서 pause 시점의 실제 amplitude
+                amplitude = speakerAmplitude * Math.cos(k * micPosition) * Math.cos(omega * realTime);
+            }
+            
+            elements.micAmplitude.value = Math.abs(amplitude).toFixed(3);
+        }
+
+        function drawWave() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const tubeY = canvas.height * 0.6;
+            const tubeHeight = 60;
+            const pixelsPerCm = (canvas.width - 120) / tubeLength;
+            
+            // Draw tube background
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(60, tubeY - tubeHeight/2, tubeLength * pixelsPerCm, tubeHeight);
+            
+            // Draw tube borders
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(60, tubeY - tubeHeight/2, tubeLength * pixelsPerCm, tubeHeight);
+            
+            // Draw speaker
+            ctx.fillStyle = '#333';
+            ctx.fillRect(20, tubeY - 40, 40, 80);
+            ctx.fillStyle = '#444';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(40, tubeY - 15 + i * 15, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw wall if closed tube
+            if (isClosedTube) {
+                const wallX = 60 + wallPosition * pixelsPerCm;
+                const wallColor = isPaused ? '#666' : (isDraggingWall ? '#555' : '#333');
+                ctx.fillStyle = wallColor;
+                ctx.fillRect(wallX - 8, tubeY - tubeHeight/2 - 5, 16, tubeHeight + 10);
+                ctx.fillStyle = isPaused ? '#888' : '#666';
+                for (let i = 0; i < 5; i++) {
+                    ctx.fillRect(wallX - 6 + i * 3, tubeY - tubeHeight/2, 2, tubeHeight);
+                }
+                ctx.fillStyle = isPaused ? '#999' : '#ff0000';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('WALL', wallX, tubeY - tubeHeight/2 - 15);
+                if (isPaused) {
+                    ctx.fillStyle = '#999';
+                    ctx.font = '8px Arial';
+                    ctx.fillText('LOCKED', wallX, tubeY - tubeHeight/2 - 25);
+                }
+            }
+            
+            // Draw wave
+            const { k, omega } = getWaveParameters();
+            ctx.strokeStyle = '#0066cc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const maxX = isClosedTube ? wallPosition : tubeLength;
+            let firstPoint = true;
+            
+            for (let x = 0; x <= maxX; x += 0.5) {
+                let amplitude;
+                if (isClosedTube) {
+                    const L = wallPosition;
+                    amplitude = speakerAmplitude * Math.sin(k * (L - x)) * Math.cos(omega * realTime);
+                } else {
+                    amplitude = speakerAmplitude * Math.cos(k * x) * Math.cos(omega * realTime);
+                }
+                
+                const canvasX = 60 + x * pixelsPerCm;
+                const canvasY = tubeY + amplitude * 20;
+                
+                if (firstPoint) {
+                    ctx.moveTo(canvasX, canvasY);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+            
+            // Draw microphone
+            const micX = 60 + micPosition * pixelsPerCm;
+            const micBeyondWall = isClosedTube && micPosition > wallPosition;
+            
+            ctx.fillStyle = micBeyondWall ? '#cccccc' : (isDraggingMic ? '#ff8800' : '#ff6600');
+            ctx.beginPath();
+            ctx.arc(micX, tubeY - 40, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(micX - 3, tubeY - 40, 6, 25);
+            
+            ctx.fillStyle = micBeyondWall ? '#999999' : '#ff6600';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('MIC', micX, tubeY - 55);
+            
+            if (micBeyondWall) {
+                ctx.fillStyle = '#666666';
+                ctx.font = '8px Arial';
+                ctx.fillText('INACTIVE', micX, tubeY - 65);
+            }
+            
+            // Draw axes and ticks
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(60, tubeY + 50);
+            ctx.lineTo(60 + tubeLength * pixelsPerCm, tubeY + 50);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            const tickInterval = tubeLength > 100 ? 20 : 10;
+            for (let i = 0; i <= tubeLength; i += tickInterval) {
+                const tickX = 60 + i * pixelsPerCm;
+                ctx.beginPath();
+                ctx.moveTo(tickX, tubeY + 45);
+                ctx.lineTo(tickX, tubeY + 55);
+                ctx.stroke();
+                ctx.fillText(i.toString(), tickX, tubeY + 70);
+            }
+            
+            ctx.fillText('x (cm)', 60 + (tubeLength * pixelsPerCm) / 2, tubeY + 90);
+        }
+
+        function animate() {
+            if (isPaused) return;
+            
+            realTime += BASE_TIME_STEP;
+            time = realTime;
+            
+            // 마이크 신호 업데이트
+            updateMicAmplitude();
+            
+            // 파동 애니메이션 그리기
+            drawWave();
+            
+            // 시뮬레이션 속도에 따른 프레임 조절
+            if (simulationSpeed >= 1.0) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                const delay = (1.0 / simulationSpeed - 1) * 16;
+                setTimeout(() => {
+                    animationId = requestAnimationFrame(animate);
+                }, delay);
+            }
+        }
+
+        // Start simulation
+        init();
+    </script>
+</body>
+</html>
