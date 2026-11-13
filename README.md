@@ -17,3 +17,7 @@ Plain static HTML/CSS/JS served by GitHub Pages. No build step.
 1. Make `tools/<slug>/` and put the standalone HTML in `app.html`.
 2. Copy `index.html` from another tool folder and change the title, description, and breadcrumb.
 3. Add a card to `tools/index.html`.
+
+## In-page editor
+Open any page with `?edit`, sign in with a fine-grained GitHub token (this repository only, Contents: read and write), edit, and save.
+The editor (`assets/js/editor.js`) rewrites only the part of the page between `<!-- EDITABLE:START -->` and `<!-- EDITABLE:END -->` and commits it through the GitHub REST API. Visitors without a token cannot save anything.

@@ -1,0 +1,51 @@
+/* Editor UI. Loaded only together with editor.js. */
+.ed-fab {
+  position: fixed; right: 16px; bottom: 16px; z-index: 50;
+  background: var(--accent); color: #fff; border: none; border-radius: 999px;
+  padding: 10px 16px; font-size: 0.95rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.ed-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  background: #1b2330; color: #fff; padding: 8px 12px;
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+  font-size: 0.88rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.25);
+}
+.ed-group { display: flex; gap: 4px; align-items: center; }
+.ed-lbl { color: #9aa5b5; margin-right: 2px; }
+.ed-bar button {
+  background: #2c3646; color: #fff; border: 1px solid #3c475a; border-radius: 6px;
+  padding: 4px 9px; cursor: pointer; font-size: 0.88rem;
+}
+.ed-bar button:hover { background: #3a4659; }
+.ed-bar button.ed-primary { background: #2f7d4f; border-color: #3b9a62; font-weight: 600; }
+.ed-status { flex-basis: 100%; color: #c9d1dc; min-height: 1.2em; }
+.ed-status.ed-ok { color: #8fe0a8; }
+.ed-status.ed-warn { color: #f3d27a; }
+.ed-status.ed-err { color: #ff9b9b; }
+body.ed-on { padding-bottom: 130px; }
+
+body.ed-on [contenteditable="true"] { outline: 1px dashed transparent; outline-offset: 2px; border-radius: 3px; }
+body.ed-on [contenteditable="true"]:hover { outline-color: #8aa8d6; }
+body.ed-on [contenteditable="true"]:focus { outline: 2px solid var(--accent); background: var(--accent-soft); }
+body.ed-on .ed-cur-item { box-shadow: 0 0 0 2px #e0a040; border-radius: 4px; }
+body.ed-on .ed-cur-sec { outline: 2px dotted #8aa8d6; outline-offset: 6px; border-radius: 6px; }
+body.ed-on .ed-clickable { cursor: pointer; box-shadow: 0 0 0 3px #e0a040; }
+
+.ed-modal {
+  position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.ed-dialog {
+  background: var(--bg); color: var(--text); border-radius: 10px; padding: 20px;
+  width: 100%; max-width: 420px; box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+}
+.ed-dialog h3 { margin-top: 0; }
+.ed-dialog input[type=password] {
+  width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-soft); color: var(--text); margin: 6px 0 10px;
+}
+.ed-dialog .ed-err { color: #c0392b; min-height: 1.2em; font-size: 0.9rem; }
+.ed-dialog .ed-row { display: flex; gap: 8px; justify-content: flex-end; }
+.ed-dialog button { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--text); cursor: pointer; }
+.ed-dialog .ed-ok { background: var(--accent); color: #fff; border-color: var(--accent); }
+@media (max-width: 600px) { body.ed-on { padding-bottom: 280px; } }

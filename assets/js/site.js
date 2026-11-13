@@ -7,7 +7,20 @@
     if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
   } catch (e) {}
 
+  // ---- owner-only editor: loaded only with ?edit or a saved token ----
+  var wantEditor = /[?&]edit\b/.test(location.search);
+  try { wantEditor = wantEditor || !!(localStorage.getItem('ed_token') || sessionStorage.getItem('ed_token')); } catch (e) {}
+
   document.addEventListener('DOMContentLoaded', function () {
+    if (wantEditor && document.getElementById('content')) {
+      var css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = '/assets/css/editor.css';
+      document.head.appendChild(css);
+      var js = document.createElement('script');
+      js.src = '/assets/js/editor.js';
+      document.body.appendChild(js);
+    }
+
     var menuBtn = document.querySelector('.menu-btn');
     var nav = document.querySelector('.nav');
     if (menuBtn && nav) {

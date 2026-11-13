@@ -186,3 +186,9 @@ body.tool-page .container { max-width: 1280px; }
 
 /* ===== Footer ===== */
 .site-footer { border-top: 1px solid var(--border); padding: 20px 0 32px; color: var(--text-muted); font-size: 0.88rem; }
+
+/* ===== Images added with the editor ===== */
+.img-block { margin: 1rem 0; }
+.img-block img { display: block; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); }
+.img-block figcaption { font-size: 0.9rem; color: var(--text-muted); margin-top: 6px; }
+img.avatar { display: block; }
